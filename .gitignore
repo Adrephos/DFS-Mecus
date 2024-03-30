@@ -1,0 +1,8 @@
+# Ignore all chunk files in the chunks directory
+/chunks/*.chunk* 
+
+# Ignore a reconstructed file
+/reconstruct/*
+
+# Ignore virtual environment
+/DFS/*
