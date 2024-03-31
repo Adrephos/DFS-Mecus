@@ -1,0 +1,1 @@
+{"hola.txt": {"chunks": 3, "node": "127.0.0.1", "replicaNode": "127.0.0.2"}, "hola": {"la_vida": {"chunks": 3, "node": "127.0.0.1", "replicaNode": "127.0.0.2"}}, "home": {"gleipnir": {"idk.py": {"chunks": 3, "node": "127.0.0.1", "replicaNode": "127.0.0.2"}}}}
