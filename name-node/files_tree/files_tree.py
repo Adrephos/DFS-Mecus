@@ -222,6 +222,7 @@ def main():
             os.system('clear')
         else:
             print("Invalid command. Enter 'help' for a list of commands.")
+
         root_db.upsert(Document(tree_to_map(root), doc_id=1))
 
 

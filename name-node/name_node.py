@@ -1,25 +1,57 @@
 from flask import Flask, request, jsonify
 from tinydb import TinyDB, Query
 
+# Inicialización de la base de datos y la tabla
+db = TinyDB('db.json')
+clients = db.table('clients')
+
+
 # Inicialización y configuración de Flask
 # Server
 app = Flask(__name__)
 
 
-@app.route('/', methods=['POST'])
-def recibir_mensaje():
+@app.route('/register', methods=['POST'])
+def register():
     data = request.get_json()
     name = data.get('name')
     password = data.get('password')
+    ip = data.get('ip')
 
-    # PONGAN AQUÍ LA LÓGICA QUE GUARDA ESOS DATOS EN LA BASE DE DATOS :D
-    if data:
-        respuesta = {"response": "Successful registration"}
+    if name and password and ip:
+        user = clients.get(Query().name == name)
+        if user:
+            response = {'response': 'Username is already in use'}
+        else:
+            clients.insert({'name': name, 'password': password, 'ip': ip})
+            response = {'response': 'Successful registration'}
     else:
-        respuesta = {"response": "Unknown message."}
+        response = {'response': 'Unknown message.'}
 
-    return jsonify(respuesta), 200
+    return jsonify(response), 200
 
 
-if __name__ == "__main__":
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    name = data.get('name')
+    password = data.get('password')
+    ip = data.get('ip')
+
+    if name and password and ip:
+        user = clients.get((Query().name == name) & (Query().password == password))
+        if user:
+            if user['ip'] != ip:
+                clients.update({'ip': ip}, doc_ids=[user.doc_id])
+
+            response = {'response': 'Successful login'}
+        else:
+            response = {'response': 'Invalid username or password'}
+    else:
+        response = {'response': 'Unknown message.'}
+
+    return jsonify(response), 200
+
+
+if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)
