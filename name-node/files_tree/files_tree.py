@@ -1,5 +1,7 @@
 import os
 import json
+from tinydb import TinyDB
+from tinydb.table import Document
 
 
 class DirectoryNode:
@@ -65,8 +67,18 @@ class FilesTree:
         if not success:
             return "No such a file or directory\n", False
 
-        in_dir.files[file_name] = {'chunks': chunks,
-                                   'node': node, 'replicaNode': replicaNode}
+        in_dir.files[file_name] = {
+            'chunks': {
+                1: '127.0.0.1',
+                2: '127.0.0.8',
+                3: '127.0.0.7',
+            },
+            'chunksReplicas': {
+                1: '127.0.0.3',
+                2: '127.0.0.5',
+                3: '127.0.0.6',
+            }
+        }
         return "", True
 
     def change_dir(self, path: str):
@@ -134,14 +146,16 @@ This functions will be executed from a cli client
 
 
 def main():
-    if not os.path.exists('tree.json'):
+    db = TinyDB('db.json')
+    root_db = db.table('tree')
+
+    map = root_db.get(doc_id=1)
+    if not map:
         root = DirectoryNode('/', None)
         root.parent = root
+        root_db.insert(Document(tree_to_map(root), doc_id=1))
     else:
-        f = open("tree.json", "r")
-        f_json = f.read()
-        tree_map = json.loads(f_json)
-        root = map_to_tree(tree_map, '/', None)
+        root = map_to_tree(map, '/', None)
 
     file_tree = FilesTree(root)  # Create the initial file tree
 
@@ -208,8 +222,7 @@ def main():
             os.system('clear')
         else:
             print("Invalid command. Enter 'help' for a list of commands.")
-        with open("tree.json", "w") as outfile:
-            json.dump(tree_to_map(root), outfile)
+        root_db.upsert(Document(tree_to_map(root), doc_id=1))
 
 
 if __name__ == "__main__":
