@@ -26,16 +26,16 @@ def register():
     password = data.get('password')
     ip = data.get('ip')
 
-    if name and password and ip:
-        user = clients.get(Query().name == name)
-        if user:
-            response = {'response': 'Username is already in use'}
-        else:
-            clients.insert(
-                {'name': name, 'password': hash_and_salt(password), 'ip': ip})
-            response = {'response': 'Successful registration'}
-    else:
+    if not (name or password or ip):
         response = {'response': 'Unknown message.'}
+
+    user = clients.get(Query().name == name)
+    if user:
+        response = {'response': 'Username is already in use'}
+    else:
+        clients.insert(
+            {'name': name, 'password': hash_and_salt(password), 'ip': ip})
+        response = {'response': 'Successful registration'}
 
     return jsonify(response), 200
 
@@ -47,21 +47,21 @@ def login():
     password = data.get('password')
     ip = data.get('ip')
 
-    if name and password and ip:
-        user = clients.get(Query().name == name)
+    if not (name or password or ip):
+        response = {'response': 'Unknown message.'}
+        return jsonify(response), 200
 
-        if user:
-            hash = str(user.get('password')).encode('utf-8')
-            if not bcrypt.checkpw(password.encode('utf-8'), hash):
-                response = {'response': 'Invalid username or password'}
-            if user['ip'] != ip:
-                clients.update({'ip': ip}, doc_ids=[user.doc_id])
+    user = clients.get(Query().name == name)
+    if user:
+        hash = user['password'].encode('utf-8')
+        if user['ip'] != ip:
+            clients.update({'ip': ip}, doc_ids=[user.doc_id])
 
-            response = {'response': 'Successful login'}
-        else:
+        response = {'response': 'Successful login'}
+        if not bcrypt.checkpw(password.encode('utf-8'), hash):
             response = {'response': 'Invalid username or password'}
     else:
-        response = {'response': 'Unknown message.'}
+        response = {'response': 'Invalid username or password'}
 
     return jsonify(response), 200
 
