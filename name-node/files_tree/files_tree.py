@@ -58,7 +58,7 @@ class FilesTree:
                 return in_dir, False
         return in_dir, True
 
-    def add_file(self, path: str, chunks: int, node: str, replicaNode: str):
+    def add_file(self, path: str, chunks: dict, chunksReplicas: dict):
         file_name = path.strip('/').split('/')[-1]
         path = "./" + '/'.join(path.strip('/').split('/')[:-1])
 
@@ -68,16 +68,8 @@ class FilesTree:
             return "No such a file or directory\n", False
 
         in_dir.files[file_name] = {
-            'chunks': {
-                1: '127.0.0.1',
-                2: '127.0.0.8',
-                3: '127.0.0.7',
-            },
-            'chunksReplicas': {
-                1: '127.0.0.3',
-                2: '127.0.0.5',
-                3: '127.0.0.6',
-            }
+            'chunks': chunks,
+            'chunksReplicas': chunksReplicas
         }
         return "", True
 
@@ -181,7 +173,19 @@ def main():
                 print("Usage: add_file <file_path> <chunks> <node> <replicaNode>")
             else:
                 message, success = file_tree.add_file(
-                    args[1], 3, '127.0.0.1', '127.0.0.2')
+                    args[1],
+                    {
+                        "1": "127.0.0.5",
+                        "2": "127.0.0.2",
+                        "3": "127.0.0.7",
+                        "4": "127.0.0.1",
+                    }, {
+                        "1": "127.0.0.5",
+                        "2": "127.0.0.5",
+                        "3": "127.0.0.7",
+                        "4": "127.0.0.3",
+                    }
+                )
                 print(message, end="")
 
         elif args[0] == 'cd':
