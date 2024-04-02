@@ -1,1 +1,1 @@
-{"clients": {"1": {"name": "fonsek", "password": "123", "ip": "192.168.10.93"}}}
+{"clients": {"1": {"name": "adrephos", "password": "$2b$12$ZoF6RHrJ82r0n2VHFUesmeewZLTFCpwNuUjuS/yj6x9qa6vJqb9Z6", "ip": "192.168.1.7"}, "2": {"name": "fonsek", "password": "$2b$12$kAZszajVslA8dAN82mSNOOCrOm5tdVJtHOYokaAe2D5U1gCL4eHIm", "ip": "192.168.1.7"}}}
