@@ -35,7 +35,41 @@ def register_login(url, name, password, ip):
         print('Error when connecting to server')
 
 
+def ls(name, path, url):
+    mensaje = {'name': name, 'path': path}
+    response = requests.post(url, json=mensaje)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print('Error when connecting to server')
+        return response.json()
+
+
+def mkdir(name, path, url):
+    mensaje = {'name': name, 'path': path}
+    response = requests.post(url, json=mensaje)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print('Error when connecting to server')
+        return response.json()
+
+
+def cd(name, path, url):
+    mensaje = {'name': name, 'path': path}
+    response = requests.post(url, json=mensaje)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print('Error when connecting to server')
+        return response.json()
+
 # Funciones propias del cliente
+
+
 def split_file(path: str, chunk_size: int):
     file_r = open(path, "rb")
     chunk = 0
@@ -88,8 +122,13 @@ def rebuild_file(name: str):
 
 def run():
     login_flag = False
+    user = ""
+    curr_dir = 'please login'
     while True:
-        user_input = input()
+        print(
+            f"\u001b[35mCurrent Directory: \u001b[33m{curr_dir}")
+        user_input = input("\u001b[32m> \u001b[37m")
+
         args = parse(user_input)
 
         if login_flag:
@@ -115,32 +154,86 @@ def run():
                 file = input('File name: ')
                 rebuild_file(file)
 
+            elif args[0] == 'mkdir':
+                if len(args) != 2:
+                    print("Usage: add_dir <directory_path>")
+                else:
+                    response = mkdir(user, args[1], f'{URL}/mkdir')
+                    message = response.get('message')
+                    curr_dir = response.get('curr_dir')
+                    print(message, end="")
+
+            elif args[0] == 'cd':
+                if len(args) != 2:
+                    print("Usage: cd <directory_path>")
+                else:
+                    response = cd(user, args[1], f'{URL}/cd')
+                    message = response.get('message')
+                    curr_dir = response.get('curr_dir')
+                    print(message, end="")
+
+            elif args[0] == 'ls':
+                if len(args) == 1:
+                    response = ls(user, "", f'{URL}/ls')
+                elif len(args) >= 1:
+                    response = ls(user, args[1], f'{URL}/ls')
+                else:
+                    print("Usage: ls <directory_path>(optional)")
+                    continue
+                message = response.get('message')
+                items = response.get('items')
+                curr_dir = response.get('curr_dir')
+                if items:
+                    print("\n".join(items))
+                elif message != "":
+                    print(message, end="")
+                else:
+                    print("Directory is empty")
+
             elif args[0] == 'logout':
                 print("Ending program...")
                 break
 
             elif args[0] == 'help' and len(args) == 1:
                 print('available commands:')
-                print('  available          - IDK')  # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
+                print("  mkdir <path>       - Create a directory")
+                print("  cd <path>          - Change directory")
+                print("  ls                 - List directory contents")
+                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
+                print('  available          - IDK')
                 print('  help               - Show this help')
                 print('  logout             - Stop program')
-                print('  read               - IDK')  # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print('  send               - IDK')  # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
+                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
+                print('  read               - IDK')
+                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
+                print('  send               - IDK')
+
+            elif args[0] == 'clear':
+                os.system('clear')
 
             else:
                 print('Unknown command')
 
         elif args[0] == 'login' and len(args) == 3:
-            login = register_login(f"{URL}/login", args[1], args[2], str(get_ip()))
+            login = register_login(
+                f"{URL}/login", args[1], args[2], str(get_ip()))
             if login == 'Successful login':
                 login_flag = True
+                user = args[1]
+                curr_dir = '/'
                 print(f'Welcome {args[1]}')
 
         elif args[0] == 'register' and len(args) == 3:
-            register = register_login(f"{URL}/register", args[1], args[2], str(get_ip()))
+            register = register_login(
+                f"{URL}/register", args[1], args[2], str(get_ip()))
             if register == 'Successful registration':
                 login_flag = True
+                user = args[1]
+                curr_dir = '/'
                 print(f'Welcome {args[1]}')
+
+        elif args[0] == 'clear':
+            os.system('clear')
 
         elif args[0] == 'help' and len(args) == 1:
             print('available commands:')
