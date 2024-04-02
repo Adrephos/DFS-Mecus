@@ -2,7 +2,7 @@ import os
 import requests
 import socket
 
-from boostrap import *
+from boostrap import URL, CHUNK_SIZE
 
 
 # Funciones utiles
@@ -59,6 +59,28 @@ def mkdir(name, path, url):
 
 def cd(name, path, url):
     mensaje = {'name': name, 'path': path}
+    response = requests.post(url, json=mensaje)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print('Error when connecting to server')
+        return response.json()
+
+
+def can_add(name, path, url):
+    mensaje = {'name': name, 'path': path}
+    response = requests.post(url, json=mensaje)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print('Error when connecting to server')
+        return response.json()
+
+
+def pwd(name, url):
+    mensaje = {'name': name, 'path': '.'}
     response = requests.post(url, json=mensaje)
 
     if response.status_code == 200:
@@ -161,6 +183,7 @@ def run():
                     response = mkdir(user, args[1], f'{URL}/mkdir')
                     message = response.get('message')
                     curr_dir = response.get('curr_dir')
+                    print(response.get('full_path'))
                     print(message, end="")
 
             elif args[0] == 'cd':
@@ -170,6 +193,27 @@ def run():
                     response = cd(user, args[1], f'{URL}/cd')
                     message = response.get('message')
                     curr_dir = response.get('curr_dir')
+                    print(message, end="")
+
+            elif args[0] == 'pwd':
+                if len(args) != 1:
+                    print("Usage: pwd")
+                else:
+                    response = pwd(user, f'{URL}/pwd')
+                    message = response.get('message')
+                    curr_dir = response.get('curr_dir')
+                    print(message)
+
+            elif args[0] == 'can_add':
+                if len(args) != 2:
+                    print("Usage: can_add <file_path>")
+                else:
+                    response = can_add(user, args[1], f'{URL}/can_add')
+                    message = response.get('message')
+                    curr_dir = response.get('curr_dir')
+                    full_path = response.get('full_path')
+                    if message == "":
+                        print("Full file path:", full_path)
                     print(message, end="")
 
             elif args[0] == 'ls':
