@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 from tinydb import TinyDB, Query
 import bcrypt
+from datetime import datetime, timedelta
+import threading
+import time
 
 from files_tree.files_tree import DirectoryNode, FilesTree, map_to_tree, tree_to_map
 
@@ -8,6 +11,7 @@ from files_tree.files_tree import DirectoryNode, FilesTree, map_to_tree, tree_to
 db = TinyDB('db.json')
 clients = db.table('clients')
 trees = db.table('trees')
+data_nodes = db.table('data_nodes')
 
 users_trees: dict[str, FilesTree] = {}
 
@@ -17,6 +21,7 @@ users_trees: dict[str, FilesTree] = {}
 app = Flask(__name__)
 
 
+# Funciones útiles
 def hash_and_salt(password: str):
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
@@ -29,6 +34,7 @@ def update_user_tree(name):
     trees.update({'tree': map}, Query().name == name)
 
 
+# Funciones con los clientes
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -38,6 +44,7 @@ def register():
 
     if not (name or password or ip):
         response = {'response': 'Unknown message.'}
+        return jsonify(response), 200
 
     user = clients.get(Query().name == name)
     if user:
@@ -176,5 +183,62 @@ def can_add():
     return jsonify(response), 200
 
 
+# Funciones con el NameNode
+@app.route('/register_dn', methods=['POST'])
+def register_dn():
+    data = request.get_json()
+    name = data.get('name')
+    ip = data.get('ip')
+
+    if not (name or ip):
+        response = {'response': 'Unknown message.'}
+        return jsonify(response), 200
+
+    data_node = data_nodes.get(Query().name == name)
+    if data_node:
+        response = {'response': 'DataNode name is already in use'}
+    else:
+        data_nodes.insert(
+            {'name': name, 'ip': ip})
+
+        response = {'response': 'Successful creation'}
+
+    return jsonify(response), 200
+
+
+@app.route('/keep_alive', methods=['POST'])
+def keep_alive():
+    data = request.get_json()
+    name = data.get('name')
+
+    if not name:
+        response = {'response': 'Unknown DataNode.'}
+        return jsonify(response), 400
+
+    data_node = data_nodes.get(Query().name == name)
+    if data_node:
+        data_nodes.update({'last_seen': datetime.now().isoformat()}, Query().name == name)
+        response = {'response': 'KeepAlive received'}
+    else:
+        response = {'response': 'DataNode not registered'}
+        return jsonify(response), 404
+
+    return jsonify(response), 200
+
+
+def clean_up_data_nodes():
+    while True:
+        now = datetime.now()
+        threshold_time = now - timedelta(seconds=10)  # 10 segundos sin señales y lo considera down
+        for data_node in data_nodes.all():
+            if 'last_seen' in data_node:
+                last_seen = datetime.fromisoformat(data_node['last_seen'])
+                if last_seen < threshold_time:
+                    data_nodes.remove(doc_ids=[data_node.doc_id])
+                    print(f"Removed inactive DataNode: {data_node['name']}")
+        time.sleep(5)  # Revisa cada 5 segundos
+
+
 if __name__ == '__main__':
+    threading.Thread(target=clean_up_data_nodes, daemon=True).start()
     app.run(host='127.0.0.1', port=5000)
