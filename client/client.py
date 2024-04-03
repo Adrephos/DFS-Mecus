@@ -2,7 +2,7 @@ import os
 import requests
 import socket
 
-from boostrap import URL, CHUNK_SIZE
+from boostrap import *
 
 
 # Funciones utiles
@@ -25,8 +25,8 @@ def get_ip():
 
 # Funciones de Flask
 def register_login(url, name, password, ip):
-    mensaje = {'name': name, 'password': password, 'ip': ip}
-    response = requests.post(url, json=mensaje)
+    message = {'name': name, 'password': password, 'ip': ip}
+    response = requests.post(url, json=message)
 
     if response.status_code == 200:
         print('Response from server:', response.json().get('response'))
@@ -36,8 +36,8 @@ def register_login(url, name, password, ip):
 
 
 def ls(name, path, url):
-    mensaje = {'name': name, 'path': path}
-    response = requests.post(url, json=mensaje)
+    message = {'name': name, 'path': path}
+    response = requests.post(url, json=message)
 
     if response.status_code == 200:
         return response.json()
@@ -47,8 +47,8 @@ def ls(name, path, url):
 
 
 def mkdir(name, path, url):
-    mensaje = {'name': name, 'path': path}
-    response = requests.post(url, json=mensaje)
+    message = {'name': name, 'path': path}
+    response = requests.post(url, json=message)
 
     if response.status_code == 200:
         return response.json()
@@ -58,8 +58,8 @@ def mkdir(name, path, url):
 
 
 def cd(name, path, url):
-    mensaje = {'name': name, 'path': path}
-    response = requests.post(url, json=mensaje)
+    message = {'name': name, 'path': path}
+    response = requests.post(url, json=message)
 
     if response.status_code == 200:
         return response.json()
@@ -69,8 +69,8 @@ def cd(name, path, url):
 
 
 def can_add(name, path, url):
-    mensaje = {'name': name, 'path': path}
-    response = requests.post(url, json=mensaje)
+    message = {'name': name, 'path': path}
+    response = requests.post(url, json=message)
 
     if response.status_code == 200:
         return response.json()
@@ -80,8 +80,8 @@ def can_add(name, path, url):
 
 
 def pwd(name, url):
-    mensaje = {'name': name, 'path': '.'}
-    response = requests.post(url, json=mensaje)
+    message = {'name': name, 'path': '.'}
+    response = requests.post(url, json=message)
 
     if response.status_code == 200:
         return response.json()
@@ -89,9 +89,8 @@ def pwd(name, url):
         print('Error when connecting to server')
         return response.json()
 
+
 # Funciones propias del cliente
-
-
 def split_file(path: str, chunk_size: int):
     file_r = open(path, "rb")
     chunk = 0
@@ -240,13 +239,15 @@ def run():
 
             elif args[0] == 'help' and len(args) == 1:
                 print('available commands:')
-                print("  mkdir <path>       - Create a directory")
-                print("  cd <path>          - Change directory")
-                print("  ls                 - List directory contents")
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
                 print('  available          - IDK')
+                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
+                print("  can_add            - IDK")
+                print("  cd <path>          - Change directory")
                 print('  help               - Show this help')
                 print('  logout             - Stop program')
+                print("  ls                 - List directory contents")
+                print("  mkdir <path>       - Create a directory")
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
                 print('  read               - IDK')
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN

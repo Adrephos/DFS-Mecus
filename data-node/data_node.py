@@ -1,40 +1,52 @@
 import requests
 import time 
 from flask import Flask, request, jsonify
+import socket
+
+from boostrap import *
 
 # Inicialización y configuración de Flask
 # Server
 app = Flask(__name__)
 
-NAMENODE_URL = 'http://127.0.0.1:5000'
 
-def register_with_namenode():
-    data = {
-        'name': 'data_node_1',  # Replace with the data node's actual name
-        'ip': '192.168.1.105'  # Replace with the data node's actual IP address
-    }
-    response = requests.post(f'{NAMENODE_URL}/registerDn', json=data) 
+# Funciones útiles
+def get_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except socket.error:
+        return 'Unknown IP'
+
+
+# Funciones de Flask
+def register_namenode(url, name, ip):
+    message = {'name': name, 'ip': ip}
+    response = requests.post(f'{url}/register_dn', json=message)
 
     if response.status_code == 200:
-        print('Registration successful!')
+        print('Creation successful!')
     else:
-        print('Registration failed.')
+        print('Creation failed.')
 
-def keepAlive():
+
+def keep_alive():
     while True:
         try:
-            response = requests.get(f'{NAMENODE_URL}/keepAlive')  # Adjust path if needed
+            response = requests.post(f'{URL}/keep_alive', json={'name': NAME})
             if response.status_code == 200:
                 print("keepAlive successful!")
             else:
-                print("keepAlive failed.")
-        except requests.exceptions.ConnectionError:
-            print("Connection to name node lost.")
+                print(f"keepAlive failed: {response.json().get('response')}")
+        except requests.exceptions.RequestException as e:
+            print(f"Connection to server failed: {e}")
 
-        time.sleep(5)  # Adjust keepAlive interval as needed
-
+        time.sleep(5)
 
 
 if __name__ == '__main__':
-    register_with_namenode()
-    keepAlive() 
+    register_namenode(URL, NAME, str(get_ip()))
+    keep_alive()
