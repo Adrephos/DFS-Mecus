@@ -101,8 +101,9 @@ def ls():
 
     message, items = tree.ls(path)
 
+    curr_dir = tree.full_path(tree.curr_dir)
     response = {'message': message, 'items': items,
-                'curr_dir': tree.curr_dir.name}
+                'curr_dir': curr_dir}
     update_user_tree(name)
     return jsonify(response), 200
 
@@ -115,9 +116,11 @@ def mkdir():
 
     tree = users_trees[name]
 
-    message, success = tree.add_dir(path)
+    message, full_path = tree.add_dir(path)
 
-    response = {'message': message, 'curr_dir': tree.curr_dir.name}
+    curr_dir = tree.full_path(tree.curr_dir)
+    response = {'message': message,
+                'full_path': full_path, 'curr_dir': curr_dir}
     update_user_tree(name)
     return jsonify(response), 200
 
@@ -130,9 +133,45 @@ def cd():
 
     tree = users_trees[name]
 
-    message, success = tree.change_dir(path)
+    message, full_path = tree.change_dir(path)
 
-    response = {'message': message, 'curr_dir': tree.curr_dir.name}
+    curr_dir = tree.full_path(tree.curr_dir)
+    response = {'message': message,
+                'full_path': full_path, 'curr_dir': curr_dir}
+    update_user_tree(name)
+    return jsonify(response), 200
+
+
+@app.route('/pwd', methods=['POST'])
+def pwd():
+    data = request.get_json()
+    name = data.get('name')
+    path = data.get('path')
+
+    tree = users_trees[name]
+
+    dir, success = tree.get_dir(path)
+    full_path = tree.full_path(dir)
+
+    curr_dir = tree.full_path(tree.curr_dir)
+    response = {'message': full_path, 'curr_dir': curr_dir}
+    update_user_tree(name)
+    return jsonify(response), 200
+
+
+@app.route('/can_add', methods=['POST'])
+def can_add():
+    data = request.get_json()
+    name = data.get('name')
+    path = data.get('path')
+
+    tree = users_trees[name]
+
+    message, in_dir, full_path = tree.can_add_file(path)
+
+    curr_dir = tree.full_path(tree.curr_dir)
+    response = {'message': message,
+                'full_path': full_path, 'curr_dir': curr_dir}
     update_user_tree(name)
     return jsonify(response), 200
 
