@@ -66,7 +66,7 @@ class FilesTree:
             return "File exists", in_dir, file_full_path
         return "", in_dir, file_full_path
 
-    def add_file(self, path: str, chunks: dict, chunksReplicas: dict):
+    def add_file(self, path: str, hash: str, chunks: dict, chunksReplicas: dict):
         file_name = path.strip('/').split('/')[-1]
         message, in_dir, file_full_path = self.can_add_file(path)
 
@@ -74,6 +74,7 @@ class FilesTree:
             return message, file_full_path
 
         in_dir.files[file_name] = {
+            'hash': hash,
             'chunks': chunks,
             'chunksReplicas': chunksReplicas
         }
