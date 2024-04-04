@@ -80,6 +80,20 @@ class FilesTree:
         }
         return "", file_full_path
 
+    def file_info(self, path: str):
+        file_name = path.strip('/').split('/')[-1]
+        path = "./" + '/'.join(path.strip('/').split('/')[:-1])
+
+        in_dir, success = self.get_dir(path)
+
+        if not success:
+            return "No such a file or directory\n", None
+
+        if file_name not in in_dir.files:
+            return "No such a file or directory\n", None
+
+        return "", in_dir.files[file_name]
+
     def change_dir(self, path: str):
         in_dir, success = self.get_dir(path)
         new_dir_full_path = self.full_path(self.curr_dir)
@@ -131,7 +145,7 @@ def tree_to_map(root: DirectoryNode):
     return tree_map
 
 
-def map_to_tree(map, name, parent):
+def map_to_tree(map, name, parent) -> DirectoryNode:
     root = DirectoryNode(name, parent)  # Create the root DirectoryNode
     if parent is None:
         root.parent = root
