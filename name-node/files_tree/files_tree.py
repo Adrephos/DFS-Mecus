@@ -66,7 +66,7 @@ class FilesTree:
             return "File exists", in_dir, file_full_path
         return "", in_dir, file_full_path
 
-    def add_file(self, path: str, chunks: dict, chunksReplicas: dict):
+    def add_file(self, path: str, hash: str, chunks: dict, chunksReplicas: dict):
         file_name = path.strip('/').split('/')[-1]
         message, in_dir, file_full_path = self.can_add_file(path)
 
@@ -74,10 +74,25 @@ class FilesTree:
             return message, file_full_path
 
         in_dir.files[file_name] = {
+            'hash': hash,
             'chunks': chunks,
             'chunksReplicas': chunksReplicas
         }
         return "", file_full_path
+
+    def file_info(self, path: str):
+        file_name = path.strip('/').split('/')[-1]
+        path = "./" + '/'.join(path.strip('/').split('/')[:-1])
+
+        in_dir, success = self.get_dir(path)
+
+        if not success:
+            return "No such a file or directory\n", None
+
+        if file_name not in in_dir.files:
+            return "No such a file or directory\n", None
+
+        return "", in_dir.files[file_name]
 
     def change_dir(self, path: str):
         in_dir, success = self.get_dir(path)
@@ -130,7 +145,7 @@ def tree_to_map(root: DirectoryNode):
     return tree_map
 
 
-def map_to_tree(map, name, parent):
+def map_to_tree(map, name, parent) -> DirectoryNode:
     root = DirectoryNode(name, parent)  # Create the root DirectoryNode
     if parent is None:
         root.parent = root

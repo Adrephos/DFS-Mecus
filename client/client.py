@@ -2,7 +2,8 @@ import os
 import requests
 import socket
 
-from client.bootstrap import *
+from bootstrap import *
+
 
 
 # Util Functions

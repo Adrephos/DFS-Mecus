@@ -6,3 +6,15 @@
 
 # Ignore virtual environment
 /DFS/*
+
+# Ignore python cache
+**/__pycache__/
+
+# Ignore environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
