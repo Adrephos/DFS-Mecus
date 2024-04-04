@@ -44,7 +44,7 @@ def keep_alive():
         except requests.exceptions.RequestException as e:
             print(f"Connection to server failed: {e}")
 
-        time.sleep(5)
+        time.sleep(KEEPALVIE_SLEEP_SECONDS)
 
 
 if __name__ == '__main__':
