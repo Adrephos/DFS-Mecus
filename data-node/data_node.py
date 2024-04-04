@@ -25,7 +25,11 @@ def get_ip():
 # Funciones de Flask
 def register_namenode(url, name, ip):
     message = {'name': name, 'ip': ip}
-    response = requests.post(f'{url}/register_dn', json=message)
+    try:
+        response = requests.post(f'{url}/register_dn', json=message)
+    except requests.exceptions.RequestException as e:
+        print(f"Connection to server failed: {e}")
+        exit()
 
     if response.status_code == 200:
         print('Creation successful!')
