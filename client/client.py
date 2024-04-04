@@ -5,7 +5,8 @@ import socket
 from bootstrap import *
 
 
-# Funciones utiles
+
+# Util Functions
 def parse(message: str):
     parse_message = message.split()
 
@@ -23,7 +24,24 @@ def get_ip():
         return 'Unknown IP'
 
 
-# Funciones de Flask
+# Flask Functions
+    
+def available():
+    response = requests.post(f"{URL}/available") #f"{URL}/register"
+
+    #CREO QUE TENGO QUE GUARDAR LOS DATA-NODES EN UN ARRAY PARA USARLOS EN EL COMANDO SEND
+
+    if response.status_code == 200:
+        available_nodes = response.json()
+        if available_nodes:
+            print("Available DataNodes:")
+            for node in available_nodes:
+                print(f"  - Name: {node['name']}, IP: {node['ip']}")
+        else:
+            print("No available DataNodes.")
+    else:
+        print('Error when connecting to server')
+
 def register_login(url, name, password, ip):
     message = {'name': name, 'password': password, 'ip': ip}
     response = requests.post(url, json=message)
@@ -90,7 +108,7 @@ def pwd(name, url):
         return response.json()
 
 
-# Funciones propias del cliente
+# Client Functions
 def split_file(path: str, chunk_size: int):
     file_r = open(path, "rb")
     chunk = 0
@@ -156,7 +174,7 @@ def run():
             if args[0] == 'available':
                 # AQUÍ VA EL CÓDIGO PARA CONSULTAR LA DISPONIBILIDAD DE LOS DATA-NODES
                 # GUARDALOS EN UN ARRAY PARA USARLOS EN EL COMANDO SEND
-                pass
+                available()
 
             elif args[0] == 'send':
                 # IF ARRAY:
@@ -240,7 +258,7 @@ def run():
             elif args[0] == 'help' and len(args) == 1:
                 print('available commands:')
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print('  available          - IDK')
+                print('  available          - Check the availability of the data-nodes') 
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
                 print("  can_add            - IDK")
                 print("  cd <path>          - Change directory")
