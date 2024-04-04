@@ -2,7 +2,7 @@ import os
 import requests
 import socket
 
-from boostrap import *
+from bootstrap import *
 
 
 # Funciones utiles

@@ -3,7 +3,7 @@ import time
 from flask import Flask, request, jsonify
 import socket
 
-from boostrap import *
+from bootstrap import *
 
 # Inicialización y configuración de Flask
 # Server
