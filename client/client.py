@@ -162,6 +162,8 @@ def run():
         user_input = input("\u001b[35m> \u001b[37m")
 
         args = parse(user_input)
+        if not args:
+            continue
 
         if login_flag:
             if args[0] == 'available':
