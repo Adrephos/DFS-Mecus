@@ -1,3 +1,14 @@
+def path_and_name(path: str):
+    first_char = path[0]
+    file_name = path.strip('/').split('/')[-1]
+    path = path[:-len(file_name)-1]
+    if first_char == '/' and path == '':
+        path = '/'
+    elif first_char != '/' and path == '':
+        path = '.'
+    return path, file_name
+
+
 class DirectoryNode:
     def __init__(self, name: str, parent):
         self.name = name
@@ -48,13 +59,14 @@ class FilesTree:
                 in_dir = in_dir.parent
             elif dir in in_dir.subdirs:
                 in_dir = in_dir.subdirs[dir]
+            elif dir == '' and in_dir == self.root:
+                continue
             else:
                 return in_dir, False
         return in_dir, True
 
     def can_add_file(self, path: str):
-        file_name = path.strip('/').split('/')[-1]
-        path = "./" + '/'.join(path.strip('/').split('/')[:-1])
+        path, file_name = path_and_name(path)
 
         in_dir, success = self.get_dir(path)
 
@@ -81,8 +93,7 @@ class FilesTree:
         return "", file_full_path
 
     def file_info(self, path: str):
-        file_name = path.strip('/').split('/')[-1]
-        path = "./" + '/'.join(path.strip('/').split('/')[:-1])
+        path, file_name = path_and_name(path)
 
         in_dir, success = self.get_dir(path)
 
@@ -97,11 +108,6 @@ class FilesTree:
     def change_dir(self, path: str):
         in_dir, success = self.get_dir(path)
         new_dir_full_path = self.full_path(self.curr_dir)
-
-        if path.strip('/') == "":
-            self.curr_dir = self.root
-            new_dir_full_path = self.full_path(self.curr_dir)
-            return "", new_dir_full_path
 
         if not success:
             return "No such a file or directory\n", new_dir_full_path
