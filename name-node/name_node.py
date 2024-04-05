@@ -42,6 +42,7 @@ def available():
     print(available_nodes)
     return jsonify(available_nodes), 200
 
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -103,89 +104,40 @@ def login():
     return jsonify(response), 200
 
 
-@app.route('/ls', methods=['POST'])
-def ls():
-    data = request.get_json()
-    name = data.get('name')
-    path = data.get('path')
-
-    print(path)
-
-    tree = users_trees[name]
-
-    message, items = tree.ls(path)
-
-    curr_dir = tree.full_path(tree.curr_dir)
-    response = {'message': message, 'items': items,
-                'curr_dir': curr_dir}
-    update_user_tree(name)
-    return jsonify(response), 200
-
-
-@app.route('/mkdir', methods=['POST'])
-def mkdir():
+@app.route('/tree_command/<command>', methods=['POST'])
+def tree_command(command):
     data = request.get_json()
     name = data.get('name')
     path = data.get('path')
 
     tree = users_trees[name]
 
-    message, full_path = tree.add_dir(path)
+    if command == 'mkdir':
+        message, full_path = tree.add_dir(path)
+    elif command == 'cd':
+        message, full_path = tree.change_dir(path)
+    elif command == 'can_add':
+        message, in_dir, full_path = tree.can_add_file(path)
 
-    curr_dir = tree.full_path(tree.curr_dir)
-    response = {'message': message,
-                'full_path': full_path, 'curr_dir': curr_dir}
-    update_user_tree(name)
-    return jsonify(response), 200
+    curr_dir = tree.curr_dir.name
+    try:
+        response = {'message': message,
+                    'full_path': full_path, 'curr_dir': curr_dir}
+    except Exception:
+        if command == 'ls':
+            message, items = tree.ls(path)
+            response = {'message': message, 'items': items,
+                        'curr_dir': curr_dir}
+        elif command == 'pwd':
+            curr_dir = tree.full_path(tree.curr_dir)
+            response = {'curr_dir': curr_dir}
+        elif command == 'file_info':
+            message, file_info = tree.file_info(path)
+            response = {'message': message, 'file_info': file_info,
+                        'curr_dir': curr_dir}
+        else:
+            response = {'message': 'Unknown command'}
 
-
-@app.route('/cd', methods=['POST'])
-def cd():
-    data = request.get_json()
-    name = data.get('name')
-    path = data.get('path')
-
-    tree = users_trees[name]
-
-    message, full_path = tree.change_dir(path)
-
-    curr_dir = tree.full_path(tree.curr_dir)
-    response = {'message': message,
-                'full_path': full_path, 'curr_dir': curr_dir}
-    update_user_tree(name)
-    return jsonify(response), 200
-
-
-@app.route('/pwd', methods=['POST'])
-def pwd():
-    data = request.get_json()
-    name = data.get('name')
-    path = data.get('path')
-
-    tree = users_trees[name]
-
-    dir, success = tree.get_dir(path)
-    full_path = tree.full_path(dir)
-
-    curr_dir = tree.full_path(tree.curr_dir)
-    response = {'message': full_path, 'curr_dir': curr_dir}
-    update_user_tree(name)
-    return jsonify(response), 200
-
-
-@app.route('/can_add', methods=['POST'])
-def can_add():
-    data = request.get_json()
-    name = data.get('name')
-    path = data.get('path')
-
-    tree = users_trees[name]
-
-    message, in_dir, full_path = tree.can_add_file(path)
-
-    curr_dir = tree.full_path(tree.curr_dir)
-    response = {'message': message,
-                'full_path': full_path, 'curr_dir': curr_dir}
     update_user_tree(name)
     return jsonify(response), 200
 
@@ -224,7 +176,8 @@ def keep_alive():
 
     data_node = data_nodes.get(Query().name == name)
     if data_node:
-        data_nodes.update({'last_seen': datetime.now().isoformat()}, Query().name == name)
+        data_nodes.update(
+            {'last_seen': datetime.now().isoformat()}, Query().name == name)
         response = {'response': 'KeepAlive received'}
     else:
         response = {'response': 'DataNode not registered'}
@@ -236,7 +189,8 @@ def keep_alive():
 def clean_up_data_nodes():
     while True:
         now = datetime.now()
-        threshold_time = now - timedelta(seconds=10)  # 10 segundos sin señales y lo considera down
+        # 10 segundos sin señales y lo considera down
+        threshold_time = now - timedelta(seconds=10)
         for data_node in data_nodes.all():
             if 'last_seen' in data_node:
                 last_seen = datetime.fromisoformat(data_node['last_seen'])

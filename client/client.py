@@ -5,7 +5,6 @@ import socket
 from bootstrap import *
 
 
-
 # Util Functions
 def parse(message: str):
     parse_message = message.split()
@@ -25,31 +24,41 @@ def get_ip():
 
 
 # Flask Functions
-    
-def available():
-    response = requests.post(f"{URL}/available") 
 
-    #MEJOR QUE GUARDE ESO COMO UN MAPA XD
+def available():
+    try:
+        response = requests.post(f"{URL}/available")
+    except requests.exceptions.ConnectionError:
+        print('Error when connecting to server')
+        return
+
+    # MEJOR QUE GUARDE ESO COMO UN MAPA XD
     available_data_nodes = []
 
     if response.status_code == 200:
-        #available_data_nodes.append(available_data_nodes)
+        # available_data_nodes.append(available_data_nodes)
         available_nodes = response.json()
         if available_nodes:
             print("Available DataNodes:")
             for node in available_nodes:
-                available_data_nodes.append( {'name': node['name'], 'ip': node['ip'] })
-                
-                #TIENE QUE SER EN UN RETURN
+                available_data_nodes.append(
+                    {'name': node['name'], 'ip': node['ip']})
+
+                # TIENE QUE SER EN UN RETURN
             print(available_data_nodes)
         else:
             print("No available DataNodes.")
     else:
         print('Error when connecting to server')
 
+
 def register_login(url, name, password, ip):
     message = {'name': name, 'password': password, 'ip': ip}
-    response = requests.post(url, json=message)
+    try:
+        response = requests.post(url, json=message)
+    except requests.exceptions.ConnectionError:
+        print('Error when connecting to server')
+        return
 
     if response.status_code == 200:
         print('Response from server:', response.json().get('response'))
@@ -58,53 +67,14 @@ def register_login(url, name, password, ip):
         print('Error when connecting to server')
 
 
-def ls(name, path, url):
+def command(name, path, command, url):
+    url += f'/tree_command/{command}'
     message = {'name': name, 'path': path}
-    response = requests.post(url, json=message)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
+    try:
+        response = requests.post(url, json=message)
+    except requests.exceptions.ConnectionError:
         print('Error when connecting to server')
-        return response.json()
-
-
-def mkdir(name, path, url):
-    message = {'name': name, 'path': path}
-    response = requests.post(url, json=message)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print('Error when connecting to server')
-        return response.json()
-
-
-def cd(name, path, url):
-    message = {'name': name, 'path': path}
-    response = requests.post(url, json=message)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print('Error when connecting to server')
-        return response.json()
-
-
-def can_add(name, path, url):
-    message = {'name': name, 'path': path}
-    response = requests.post(url, json=message)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print('Error when connecting to server')
-        return response.json()
-
-
-def pwd(name, url):
-    message = {'name': name, 'path': '.'}
-    response = requests.post(url, json=message)
+        return
 
     if response.status_code == 200:
         return response.json()
@@ -125,12 +95,13 @@ def split_file(path: str, chunk_size: int):
 
     while byte:
         # PUEDE MANDAR LOS BYTES A LOS DATA-NODES, EN VEZ DE GUARDARLOS ACÁ
-        # USAR HILOS PARA MANDARLOS A LOS DATA-NODES, PORQUE 
+        # USAR HILOS PARA MANDARLOS A LOS DATA-NODES, PORQUE
 
         file_n = path.split('/')[-1] + '.chunk' + str(chunk)
-        file_t = open('./chunks/' + file_n, 'wb') #QUE HAYA UN ARRAY CON TODOS LOS CHUNKS, CON TODOS LOS BINARIOS. 
-        #Y DESPUES QUE CADA HILO MANDA UN CHUNK A UN DATA-NODE
-        #Y DESPUES, QUE ESOS HILOS CREEN EL DICCIONARIO CON DONDE MANDARON LOS CHUNKS
+        # QUE HAYA UN ARRAY CON TODOS LOS CHUNKS, CON TODOS LOS BINARIOS.
+        file_t = open('./chunks/' + file_n, 'wb')
+        # Y DESPUES QUE CADA HILO MANDA UN CHUNK A UN DATA-NODE
+        # Y DESPUES, QUE ESOS HILOS CREEN EL DICCIONARIO CON DONDE MANDARON LOS CHUNKS
         # ESE DATA NODE VA A QUEDAR CON EL CHUNK. Y LUEGO, SE LO DEBE ENVIAR A OTRO DATA NODE QUE TENGA LA REPLICA
         # LUEGO, ESE DATA NODE, LE TIENE QUE DECIR AL CLIENTE DONDE ESTA LA REPLICA
 
@@ -175,11 +146,20 @@ def rebuild_file(name: str):
 def run():
     login_flag = False
     user = ""
-    curr_dir = 'please login'
+    # This print this ascii art
+    print("\u001b[32m")
+    print("  ____  _____ ____        __  __                     ")
+    print(" |  _ \\|  ___/ ___|      |  \\/  | ___  ___ _   _ ___ ")
+    print(" | | | | |_  \\___ \\ _____| |\\/| |/ _ \\/ __| | | / __|")
+    print(" | |_| |  _|  ___) |_____| |  | |  __/ (__| |_| \\__ \\")
+    print(" |____/|_|   |____/      |_|  |_|\\___|\\___|\\__,_|___/")
+
+    curr_dir = ''
+    prompt = '\n\u001b[31mPlease login or register to continue\n\u001b[36mType "help" for more information'
     while True:
         print(
-            f"\u001b[35mCurrent Directory: \u001b[33m{curr_dir}")
-        user_input = input("\u001b[32m> \u001b[37m")
+            prompt + f'\u001b[33m{curr_dir}')
+        user_input = input("\u001b[35m> \u001b[37m")
 
         args = parse(user_input)
 
@@ -199,7 +179,7 @@ def run():
 
                 # ELSE: PRINT("NADA SO, NO SABES A QUIEN MANDARLE LAS VAINAS, HAZ PRIMERO UN "AVAILABLE"")
 
-            elif args[0] == 'read':
+            elif args[0] == 'download':
                 # PONGAN AQUÍ EL CÓDIGO DE ADQUISICIÓN DE LOS CHUNKS
                 # PARA REARMAR EL ARCHIVO :)
                 print("\nRebuild file")
@@ -210,7 +190,7 @@ def run():
                 if len(args) != 2:
                     print("Usage: add_dir <directory_path>")
                 else:
-                    response = mkdir(user, args[1], f'{URL}/mkdir')
+                    response = command(user, args[1], 'mkdir', f'{URL}')
                     message = response.get('message')
                     curr_dir = response.get('curr_dir')
                     print(response.get('full_path'))
@@ -220,7 +200,7 @@ def run():
                 if len(args) != 2:
                     print("Usage: cd <directory_path>")
                 else:
-                    response = cd(user, args[1], f'{URL}/cd')
+                    response = command(user, args[1], 'cd', f'{URL}')
                     message = response.get('message')
                     curr_dir = response.get('curr_dir')
                     print(message, end="")
@@ -229,16 +209,16 @@ def run():
                 if len(args) != 1:
                     print("Usage: pwd")
                 else:
-                    response = pwd(user, f'{URL}/pwd')
-                    message = response.get('message')
-                    curr_dir = response.get('curr_dir')
-                    print(message)
+                    response = command(user, "", 'pwd', f'{URL}')
+                    full_path = response.get('curr_dir')
+                    print(full_path)
 
+            # Para testear este se usa solo cuando se va a enviar un archivo
             elif args[0] == 'can_add':
                 if len(args) != 2:
                     print("Usage: can_add <file_path>")
                 else:
-                    response = can_add(user, args[1], f'{URL}/can_add')
+                    response = command(user, args[1], 'can_add', f'{URL}')
                     message = response.get('message')
                     curr_dir = response.get('curr_dir')
                     full_path = response.get('full_path')
@@ -246,11 +226,23 @@ def run():
                         print("Full file path:", full_path)
                     print(message, end="")
 
+            # Para testear este se usa solo cuando se va a enviar un archivo
+            elif args[0] == 'file_info':
+                if len(args) != 2:
+                    print("Usage: file_info <file_path>")
+                else:
+                    response = command(user, args[1], 'file_info', f'{URL}')
+                    message = response.get('message')
+                    curr_dir = response.get('curr_dir')
+                    file_info = response.get('file_info')
+                    print(file_info)
+                    print(message, end="")
+
             elif args[0] == 'ls':
                 if len(args) == 1:
-                    response = ls(user, "", f'{URL}/ls')
+                    response = command(user, ".", 'ls', f'{URL}')
                 elif len(args) >= 1:
-                    response = ls(user, args[1], f'{URL}/ls')
+                    response = command(user, args[1], 'ls', f'{URL}')
                 else:
                     print("Usage: ls <directory_path>(optional)")
                     continue
@@ -271,16 +263,15 @@ def run():
             elif args[0] == 'help' and len(args) == 1:
                 print('available commands:')
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print('  available          - Check the availability of the data-nodes') 
-                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print("  can_add            - IDK")
+                print('  available          - Check the availability of the data-nodes')
                 print("  cd <path>          - Change directory")
+                print('  clear              - Clear the screen')
+                print('  download <path>    - IDK')
                 print('  help               - Show this help')
                 print('  logout             - Stop program')
                 print("  ls                 - List directory contents")
                 print("  mkdir <path>       - Create a directory")
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print('  read               - IDK')
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
                 print('  send               - IDK')
 
@@ -297,7 +288,8 @@ def run():
                 login_flag = True
                 user = args[1]
                 curr_dir = '/'
-                print(f'Welcome {args[1]}')
+                print(f'\n\u001b[34mWelcome {user}')
+                prompt = "\u001b[32mCurrent Directory: "
 
         elif args[0] == 'register' and len(args) == 3:
             register = register_login(
@@ -306,15 +298,17 @@ def run():
                 login_flag = True
                 user = args[1]
                 curr_dir = '/'
-                print(f'Welcome {args[1]}')
+                print(f'\n\u001b[34mWelcome {user}')
+                prompt = "\u001b[32mCurrent Directory: "
 
         elif args[0] == 'clear':
             os.system('clear')
 
         elif args[0] == 'help' and len(args) == 1:
             print('available commands:')
-            print('  help               - Show this help')
-            print('  login <name> <password> - Just a simple login')
+            print('  help                       - Show this help')
+            print('  clear                      - Clear the screen')
+            print('  login <name> <password>    - Just a simple login')
             print('  register <name> <password> - Just a simple register')
 
         else:
