@@ -35,6 +35,13 @@ def update_user_tree(name):
 
 
 # Funciones con los clientes
+
+@app.route('/available', methods=['POST'])
+def available():
+    available_nodes = data_nodes.all()
+    print(available_nodes)
+    return jsonify(available_nodes), 200
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()

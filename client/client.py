@@ -27,16 +27,21 @@ def get_ip():
 # Flask Functions
     
 def available():
-    response = requests.post(f"{URL}/available") #f"{URL}/register"
+    response = requests.post(f"{URL}/available") 
 
-    #CREO QUE TENGO QUE GUARDAR LOS DATA-NODES EN UN ARRAY PARA USARLOS EN EL COMANDO SEND
+    #MEJOR QUE GUARDE ESO COMO UN MAPA XD
+    available_data_nodes = []
 
     if response.status_code == 200:
+        #available_data_nodes.append(available_data_nodes)
         available_nodes = response.json()
         if available_nodes:
             print("Available DataNodes:")
             for node in available_nodes:
-                print(f"  - Name: {node['name']}, IP: {node['ip']}")
+                available_data_nodes.append( {'name': node['name'], 'ip': node['ip'] })
+                
+                #TIENE QUE SER EN UN RETURN
+            print(available_data_nodes)
         else:
             print("No available DataNodes.")
     else:
@@ -113,15 +118,23 @@ def split_file(path: str, chunk_size: int):
     file_r = open(path, "rb")
     chunk = 0
     byte = file_r.read(chunk_size)
-
     try:
         os.mkdir('./chunks')
     except:
         print('./chunks/ already exists')
 
     while byte:
+        # PUEDE MANDAR LOS BYTES A LOS DATA-NODES, EN VEZ DE GUARDARLOS ACÁ
+        # USAR HILOS PARA MANDARLOS A LOS DATA-NODES, PORQUE 
+
         file_n = path.split('/')[-1] + '.chunk' + str(chunk)
-        file_t = open('./chunks/' + file_n, 'wb')
+        file_t = open('./chunks/' + file_n, 'wb') #QUE HAYA UN ARRAY CON TODOS LOS CHUNKS, CON TODOS LOS BINARIOS. 
+        #Y DESPUES QUE CADA HILO MANDA UN CHUNK A UN DATA-NODE
+        #Y DESPUES, QUE ESOS HILOS CREEN EL DICCIONARIO CON DONDE MANDARON LOS CHUNKS
+        # ESE DATA NODE VA A QUEDAR CON EL CHUNK. Y LUEGO, SE LO DEBE ENVIAR A OTRO DATA NODE QUE TENGA LA REPLICA
+        # LUEGO, ESE DATA NODE, LE TIENE QUE DECIR AL CLIENTE DONDE ESTA LA REPLICA
+
+        # EL CLIENTE LE TIENE QUE DECIR AL NAME_NODE A DONDE MANDÓ LOS CHUNKS (QUIZAS LO HACE JUAN XD)
         file_t.write(byte)
         file_t.close()
 

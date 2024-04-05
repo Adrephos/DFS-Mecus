@@ -4,8 +4,8 @@
 # Ignore a reconstructed file
 /reconstruct/*
 
-# Ignore virtual environment
-/DFS/*
+# Ignore chunks
+client/chunks/*
 
 # Ignore python cache
 **/__pycache__/
@@ -18,3 +18,4 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+/aVM/*
