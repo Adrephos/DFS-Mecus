@@ -2,7 +2,7 @@ import os
 import requests
 import socket
 
-from bootstrap import *
+from bootstrap import URL, CHUNK_SIZE
 
 
 # Util Functions

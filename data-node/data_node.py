@@ -1,9 +1,9 @@
 import requests
-import time 
+import time
 from flask import Flask, request, jsonify
 import socket
 
-from bootstrap import *
+from bootstrap import URL, NAME, KEEPALVIE_SLEEP_SECONDS
 
 # Inicialización y configuración de Flask
 # Server
