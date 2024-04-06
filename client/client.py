@@ -200,15 +200,49 @@ def upload_file(user, dfs_path: str, local_path: str):
     if message != "":
         print(message)
         return
+    # se usa para guardar el archivo en el data node
+    # username-/path/to/file
     full_path = response.get('full_path')
 
     print("File will be uploaded to:", full_path)
+    # hash, array con los chunks
     hash, chunks = split_file(local_path, CHUNK_SIZE)
     if not hash:
         print('Error when splitting file')
         return
 
+    # available
+    # subir los chunks a los data nodes
+    # y hacer los mapas con los chunks y las replicas
+    # {
+    #     'chunk-0': '127.0.0.4',
+    #     'chunk-1': '127.0.0.4',
+    #     'chunk-2': '127.0.0.4',
+    #     'chunk-3': '127.0.0.4',
+    # }
+
     add_file(user, full_path, hash, {}, {})
+
+def download_file(user, dfs_path: str, local_path: str):
+    response = command(user, dfs_path, 'file_info')
+    message = response.get('message')
+    if message != "":
+        print(message)
+        return
+
+    # usar esto para descargar el archivo
+    file_info = response.get('file_info')
+    hash = file_info.get('hash')
+    chunks = file_info.get('chunks')
+    chunksReplicas = file_info.get('chunksReplicas')
+
+    # download chunks
+
+    # rebuild file
+    # save file
+    # {
+    #     'chunk-0': '
+
 
 
 def run():
