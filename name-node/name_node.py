@@ -196,6 +196,9 @@ def tree_command(command):
     data = request.get_json()
     name = data.get('name')
     path = data.get('path')
+    hash = data.get('hash')
+    chunks = data.get('chunks')
+    chunksReplicas = data.get('chunksReplicas')
 
     # Si el usuario no tiene un árbol, se crea uno
     # No es seguro, pero es un ejemplo
@@ -221,8 +224,13 @@ def tree_command(command):
         message, full_path = tree.change_dir(path)
     elif command == 'can_add':
         message, in_dir, full_path = tree.can_add_file(path)
+    elif command == 'add_file':
+        message, full_path = tree.add_file(path, hash, chunks, chunksReplicas)
+        update_user_tree(name)
+        uploadDB()
 
     curr_dir = tree.curr_dir.name
+
     try:
         response = {'message': message,
                     'full_path': full_path, 'curr_dir': curr_dir}

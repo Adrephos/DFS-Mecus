@@ -1,6 +1,7 @@
 import os
 import requests
 import socket
+import hashlib
 
 from bootstrap import URL, URL_SLAVE, CHUNK_SIZE
 
@@ -94,17 +95,49 @@ def command(name, path, command):
         return response.json()
 
 
+def add_file(name, path, hash, chunks, chunksReplicas):
+    url = f'{URL}/tree_command/add_file'
+    url_slave = f'{URL_SLAVE}/tree_command/add_file'
+
+    message = {'name': name, 'path': path, 'hash': hash,
+               'chunks': chunks, 'chunksReplicas': chunksReplicas}
+    try:
+        response = requests.post(url, json=message)
+    except requests.exceptions.ConnectionError:
+        try:
+            response = requests.post(url_slave, json=message)
+        except requests.exceptions.ConnectionError:
+            print('Error when connecting to server')
+            return
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print('Error when connecting to server')
+        return response.json()
+
+
 # Client Functions
 def split_file(path: str, chunk_size: int):
-    file_r = open(path, "rb")
+    try:
+        file_r = open(path, "rb")
+    except Exception:
+        print('not a valid file')
+        return None, None
+    print(os.path.basename(path))
     chunk = 0
+    hash = hashlib.sha256()
+    chunks = []
     byte = file_r.read(chunk_size)
+
     try:
         os.mkdir('./chunks')
     except Exception:
         print('./chunks/ already exists')
 
     while byte:
+        hash.update(byte)
+        chunks.append(byte)
         # PUEDE MANDAR LOS BYTES A LOS DATA-NODES, EN VEZ DE GUARDARLOS ACÁ
         # USAR HILOS PARA MANDARLOS A LOS DATA-NODES, PORQUE
 
@@ -123,6 +156,8 @@ def split_file(path: str, chunk_size: int):
         byte = file_r.read(chunk_size)
 
         chunk += 1
+    print(f'File hash: {hash.hexdigest()}')
+    return hash.hexdigest(), chunks
 
 
 def rebuild_file(name: str):
@@ -154,6 +189,28 @@ def rebuild_file(name: str):
             break
 
 
+def upload_file(user, dfs_path: str, local_path: str):
+    file_name = os.path.basename(local_path)
+    if dfs_path[-1] != '/':
+        dfs_path += '/'
+    dfs_path += file_name
+
+    response = command(user, dfs_path, 'can_add')
+    message = response.get('message')
+    if message != "":
+        print(message)
+        return
+    full_path = response.get('full_path')
+
+    print("File will be uploaded to:", full_path)
+    hash, chunks = split_file(local_path, CHUNK_SIZE)
+    if not hash:
+        print('Error when splitting file')
+        return
+
+    add_file(user, full_path, hash, {}, {})
+
+
 def run():
     login_flag = False
     user = ""
@@ -182,15 +239,18 @@ def run():
                 # GUARDALOS EN UN ARRAY PARA USARLOS EN EL COMANDO SEND
                 available()
 
-            elif args[0] == 'send':
-                # IF ARRAY:
-                print('Split file')
-                file = input('File path (from root): ')
-                split_file(file, CHUNK_SIZE)
-                # PONGAN AQUÍ EL CÓDIGO QUE ENVÍE LOS CHUNKS
-                # PARA ENVÍAR EL ARCHIVO :)
+            elif args[0] == 'upload':
+                if len(args) != 2:
+                    print("Usage: upload <file_path_in_dfs>")
+                else:
+                    print(
+                        '\u001b[33mEnter the file path to upload to DFS-Mecus\u001b[36m')
+                    path = input('File path (from root): \u001b[37m')
+                    upload_file(user, args[1], path)
+                    # PONGAN AQUÍ EL CÓDIGO QUE ENVÍE LOS CHUNKS
+                    # PARA ENVÍAR EL ARCHIVO :)
 
-                # ELSE: PRINT("NADA SO, NO SABES A QUIEN MANDARLE LAS VAINAS, HAZ PRIMERO UN "AVAILABLE"")
+                    # ELSE: PRINT("NADA SO, NO SABES A QUIEN MANDARLE LAS VAINAS, HAZ PRIMERO UN "AVAILABLE"")
 
             elif args[0] == 'download':
                 # PONGAN AQUÍ EL CÓDIGO DE ADQUISICIÓN DE LOS CHUNKS
@@ -236,7 +296,7 @@ def run():
                     full_path = response.get('full_path')
                     if message == "":
                         print("Full file path:", full_path)
-                    print(message, end="")
+                    print(message)
 
             # Para testear este se usa solo cuando se va a enviar un archivo
             elif args[0] == 'file_info':
@@ -285,7 +345,7 @@ def run():
                 print("  mkdir <path>       - Create a directory")
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
                 # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print('  send               - IDK')
+                print('  upload <path_in_dfs>       - Upload a file')
 
             elif args[0] == 'clear':
                 os.system('clear')
@@ -328,4 +388,5 @@ def run():
 
 
 if __name__ == '__main__':
+    # prompt to split a file
     run()
