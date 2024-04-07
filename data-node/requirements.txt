@@ -10,3 +10,8 @@ MarkupSafe==2.1.5
 requests==2.31.0
 urllib3==2.2.1
 Werkzeug==3.0.2
+
+#grpc 
+grpcio==1.62.0
+protobuf==4.25.3
+setuptools==69.1.1
