@@ -2,9 +2,11 @@ syntax = "proto3";
 
 package filetransfer;
 
-message FileUploadRequest {
+message FileChunk {
   string filename = 1;
-  bytes data = 2;
+  int32 chunk_id = 2;
+  bytes data = 3;
+  string hash = 4;
 }
 
 message UploadStatus {
@@ -21,6 +23,6 @@ message FileDownloadResponse {
 }
 
 service FileTransferService {
-  rpc Upload(stream FileUploadRequest) returns (UploadStatus) {}
+  rpc Upload(FileChunk) returns (UploadStatus) {}
   rpc Download(FileDownloadRequest) returns (stream FileDownloadResponse) {}
 }
