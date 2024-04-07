@@ -153,32 +153,6 @@ def split_file(path: str, chunk_size: int):
     print(f'File hash: {hash.hexdigest()}')
     return hash.hexdigest(), chunks
 
-# RECONSTRUCT
-
-# 1. download chunks
-# 2. rebuild file
-# 3. save file
-
-
-def download_file(user, dfs_path: str, local_path: str):
-    response = command(user, dfs_path, 'file_info')
-    message = response.get('message')
-    if message != "":
-        print(message)
-        return
-
-    # usar esto para descargar el archivo
-    file_info = response.get('file_info')
-    hash = file_info.get('hash')
-    chunks = file_info.get('chunks')
-    chunksReplicas = file_info.get('chunksReplicas')
-
-    # download chunks
-
-    # rebuild file
-    # save file
-    # {
-    #     'chunk-0': '
 
 def send_chunks(hash_value, chunks, original_file_name):
     for chunk_id, chunk_data in enumerate(chunks):
@@ -209,6 +183,33 @@ def send_chunks(hash_value, chunks, original_file_name):
         # Cierra el canal de comunicación
         channel.close()
 
+#--------------------------------------------------------------------------------------------------------------
+# RECONSTRUCT
+
+# 1. download chunks
+# 2. rebuild file
+# 3. save file
+
+
+def download_file(user, dfs_path: str, local_path: str):
+    response = command(user, dfs_path, 'file_info')
+    message = response.get('message')
+    if message != "":
+        print(message)
+        return
+
+    # usar esto para descargar el archivo
+    file_info = response.get('file_info')
+    hash = file_info.get('hash')
+    chunks = file_info.get('chunks')
+    chunksReplicas = file_info.get('chunksReplicas')
+
+    # download chunks
+
+    # rebuild file
+    # save file
+    # {
+    #     'chunk-0': '
 
 def rebuild_file(name: str):
     try:
@@ -238,6 +239,7 @@ def rebuild_file(name: str):
         except Exception:
             break
 #--------------------------------------------------------------------------------------------------------------
+
 
 def upload_file(user, dfs_path: str, local_path: str):
     file_name = os.path.basename(local_path)
