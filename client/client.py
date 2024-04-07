@@ -5,7 +5,7 @@ import hashlib
 import random
 
 import grpc
-from file_transfer_pb2 import FileChunk
+from file_transfer_pb2 import FileChunk, FileDownloadRequest
 from file_transfer_pb2_grpc import FileTransferServiceStub
 
 from bootstrap import URL, URL_SLAVE, CHUNK_SIZE, DATA_PORT
@@ -136,20 +136,9 @@ def split_file(path: str, chunk_size: int):
     chunks = []
     byte = file_r.read(chunk_size)
 
-    try:
-        os.mkdir('./chunks')
-    except Exception:
-        print('./chunks/ already exists')
-
     while byte:
         hash.update(byte)
         chunks.append(byte)
-
-        file_n = path.split('/')[-1] + '.chunk' + str(chunk)
-        file_t = open('./chunks/' + file_n, 'wb')
-
-        file_t.write(byte)
-        file_t.close()
 
         byte = file_r.read(chunk_size)
 
@@ -159,24 +148,37 @@ def split_file(path: str, chunk_size: int):
 
 
 def download_file(user, dfs_path: str, local_path: str):
-    response = command(user, dfs_path, 'file_info')
+    response = command(user, dfs_path, 'file_info')  # Asumo que esta función obtiene la info del archivo desde nameNode
     message = response.get('message')
     if message != "":
         print(message)
         return
 
-    # usar esto para descargar el archivo
     file_info = response.get('file_info')
-    hash = file_info.get('hash')
+    hash_original = file_info.get('hash')
     chunks = file_info.get('chunks')
-    chunksReplicas = file_info.get('chunksReplicas')
+    chunksReplicas = file_info.get('chunksReplicas')  # No se usa en este ejemplo, pero puede ser útil para tolerancia a fallos
 
-    # download chunks
+    # Iniciar la descarga de los chunks
+    with open(local_path, 'wb') as f:
+        for chunk_id, data_node_address in chunks.items():
+            channel = grpc.insecure_channel(data_node_address)
+            stub = FileTransferServiceStub(channel)
+            chunk_name = f"{user}_$%s.chunk{chunk_id}" % dfs_path.split('/')[-1]  # Asume formato de nombre de chunk
+            try:
+                chunk_data = stub.Download(FileDownloadRequest(filename=chunk_name)).data
+                f.write(chunk_data)
+            finally:
+                channel.close()
 
-    # rebuild file
-    # save file
-    # {
-    #     'chunk-0': '
+    # Verificar el hash del archivo ensamblado
+    with open(local_path, 'rb') as f:
+        data = f.read()
+        hash_final = hashlib.sha256(data).hexdigest()
+        if hash_final != hash_original:
+            print("Error: El hash del archivo no coincide. Descarga fallida o archivo corrupto.")
+        else:
+            print("Archivo descargado y verificado con éxito.")
 
 
 def rebuild_file(name: str):
@@ -303,11 +305,10 @@ def run():
                         print("No DataNodes available, sorry :(")
 
             elif args[0] == 'download':
-                # PONGAN AQUÍ EL CÓDIGO DE ADQUISICIÓN DE LOS CHUNKS
-                # PARA REARMAR EL ARCHIVO :)
-                print("\nRebuild file")
-                file = input('File name: ')
-                rebuild_file(file)
+                if len(args) != 3:
+                    print("Usage: download <file_path_in_dfs> <file_local_path>")
+                else:
+                    download_file(user, args[1], args[2])
 
             elif args[0] == 'mkdir':
                 if len(args) != 2:
