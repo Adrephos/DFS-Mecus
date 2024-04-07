@@ -8,7 +8,7 @@ import grpc
 from file_transfer_pb2 import FileChunk
 from file_transfer_pb2_grpc import FileTransferServiceStub
 
-from bootstrap import URL, URL_SLAVE, CHUNK_SIZE
+from bootstrap import URL, URL_SLAVE, CHUNK_SIZE, DATA_PORT
 
 
 # Util Functions
@@ -120,6 +120,10 @@ def add_file(name, path, hash, chunks, chunksReplicas):
 
 
 # Client Functions
+def get_filename_from_path(file_path):
+    return os.path.basename(file_path)
+
+
 def split_file(path: str, chunk_size: int):
     try:
         file_r = open(path, "rb")
@@ -154,36 +158,7 @@ def split_file(path: str, chunk_size: int):
     return hash.hexdigest(), chunks
 
 
-def send_chunks(hash_value, chunks, original_file_name):
-    for chunk_id, chunk_data in enumerate(chunks):
-        # Selección aleatoria de un data_node
-        data_node = random.choice(data_nodes)
-        data_node_ip = data_node['ip']
-
-        # Establece la conexión con el data_node
-        channel = grpc.insecure_channel(data_node_ip)
-        stub = FileTransferServiceStub(channel)
-
-        # Crea el mensaje FileChunk a enviar
-        chunk = FileChunk(
-            filename=original_file_name,  # Envía el nombre original del archivo.
-            chunk_id=chunk_id,
-            data=chunk_data,
-            hash=hash_value
-        )
-
-        # Envía el chunk al data_node seleccionado
-        response = stub.Upload(chunk)
-
-        if response.success:
-            print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
-        else:
-            print(f"Error al enviar chunk {chunk_id} a {data_node['name']}: {response.message}")
-
-        # Cierra el canal de comunicación
-        channel.close()
-
-#--------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------
 # RECONSTRUCT
 
 # 1. download chunks
@@ -210,6 +185,7 @@ def download_file(user, dfs_path: str, local_path: str):
     # save file
     # {
     #     'chunk-0': '
+
 
 def rebuild_file(name: str):
     try:
@@ -238,10 +214,10 @@ def rebuild_file(name: str):
             file_temp = open(file_name, 'rb')
         except Exception:
             break
-#--------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------
 
 
-def upload_file(user, dfs_path: str, local_path: str):
+def upload_file(user, dfs_path: str, local_path: str, original_file_name, nodes):
     file_name = os.path.basename(local_path)
     if dfs_path[-1] != '/':
         dfs_path += '/'
@@ -263,15 +239,35 @@ def upload_file(user, dfs_path: str, local_path: str):
         print('Error when splitting file')
         return
 
-    # available
-    # subir los chunks a los data nodes
-    # y hacer los mapas con los chunks y las replicas
-    # {
-    #     'chunk-0': '127.0.0.4',
-    #     'chunk-1': '127.0.0.4',
-    #     'chunk-2': '127.0.0.4',
-    #     'chunk-3': '127.0.0.4',
-    # }
+    # Envío de los chunks
+    for chunk_id, chunk_data in enumerate(chunks):
+        # Selección aleatoria de un data_node
+        data_node = random.choice(nodes)
+        data_node_ip = data_node['ip']
+
+        # Establece la conexión con el data_node
+        channel = grpc.insecure_channel(f'{data_node_ip}:{DATA_PORT}')
+        stub = FileTransferServiceStub(channel)
+
+        last_full_path = full_path.replace('/', ':')
+
+        chunk = FileChunk(
+            filename=f'{user}${last_full_path}',
+            chunk_id=chunk_id,
+            data=chunk_data,
+            hash=hash
+        )
+
+        # Envía el chunk al data_node seleccionado
+        response = stub.Upload(chunk)
+
+
+        if response.success:
+            print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
+        else:
+            print(f"Error al enviar chunk {chunk_id} a {data_node['name']}: {response.message}")
+
+        channel.close()
 
     add_file(user, full_path, hash, {}, {})
 
@@ -310,15 +306,17 @@ def run():
             elif args[0] == 'upload':
                 if len(args) != 2:
                     print("Usage: upload <file_path_in_dfs>")
-                else:
+                elif len(args) == 2 and len(data_nodes) >= 1:
                     print(
                         '\u001b[33mEnter the file path to upload to DFS-Mecus\u001b[36m')
                     path = input('File path (from root): \u001b[37m')
-                    upload_file(user, args[1], path)
-                    # PONGAN AQUÍ EL CÓDIGO QUE ENVÍE LOS CHUNKS
-                    # PARA ENVÍAR EL ARCHIVO :)
+                    file_name = get_filename_from_path(path)
+                    upload_file(user, args[1], path, file_name, data_nodes)
 
-                    # ELSE: PRINT("NADA SO, NO SABES A QUIEN MANDARLE LAS VAINAS, HAZ PRIMERO UN "AVAILABLE"")
+                else:
+                    print("No DataNodes available. "
+                          "Maybe this can be solved by doing 'available' "
+                          "command before 'upload'")
 
             elif args[0] == 'download':
                 # PONGAN AQUÍ EL CÓDIGO DE ADQUISICIÓN DE LOS CHUNKS

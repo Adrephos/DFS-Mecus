@@ -1,11 +1,14 @@
+import os
+import threading
 import requests
 import time
 from flask import Flask, request, jsonify
 import socket
+from concurrent import futures
     
 import grpc
-# import file_transfer_pb2
-# import file_transfer_pb2_grpc
+from file_transfer_pb2 import UploadStatus
+from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server
 
 from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS
 
@@ -14,7 +17,7 @@ from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS
 app = Flask(__name__)
 
 
-# Funciones útiles
+# Util functions
 def get_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -41,6 +44,7 @@ def register_namenode(url, name, ip):
         print('Creation failed.')
 
 
+# Keep-alive thread
 def keep_alive():
     while True:
         try:
@@ -55,6 +59,35 @@ def keep_alive():
         time.sleep(KEEPALIVE_SLEEP_SECONDS)
 
 
+# gRPC DataNodeService
+class DataNodeService(FileTransferServiceServicer):
+    def Upload(self, request, context):
+        try:
+            os.makedirs('./chunks', exist_ok=True)
+            with open(f"./chunks/{request.filename}_{request.chunk_id}.chunk", "wb") as file:
+                file.write(request.data)
+                print(f"Chunk {request.chunk_id} de {request.filename} recibido.")
+            return UploadStatus(success=True, message="Chunk recibido exitosamente.")
+        except Exception as e:
+            return UploadStatus(success=False, message=str(e))
+
+
+# gRPC Server
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    add_FileTransferServiceServicer_to_server(DataNodeService(), server)
+    server.add_insecure_port('0.0.0.0:5010')
+    server.start()
+    print("Data Node gRPC Server running...")
+    server.wait_for_termination()
+
+
 if __name__ == '__main__':
-    register_namenode(URL, NAME, str(get_ip()))
+    # Registro en el NameNode
+    register_namenode(URL, NAME, get_ip())
+
+    # Inicia el hilo de gRPC Server
+    grpc_thread = threading.Thread(target=serve)
+    grpc_thread.start()
+
     keep_alive()
