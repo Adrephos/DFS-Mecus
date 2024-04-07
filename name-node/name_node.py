@@ -246,6 +246,12 @@ def tree_command(command):
             message, file_info = tree.file_info(path)
             response = {'message': message, 'file_info': file_info,
                         'curr_dir': curr_dir}
+        elif command == 'rm':
+            message, full_path = tree.rm(path)
+            update_user_tree(name)
+            uploadDB()
+            response = {'message': message, 'full_path': full_path,
+                        'curr_dir': curr_dir}
         else:
             response = {'message': 'Unknown command'}
 

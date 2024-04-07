@@ -334,6 +334,15 @@ def run():
                     curr_dir = response.get('curr_dir')
                     print(message, end="")
 
+            elif args[0] == 'rm':
+                if len(args) != 2:
+                    print("Usage: rm <directory_path>")
+                else:
+                    response = command(user, args[1], 'rm')
+                    message = response.get('message')
+                    curr_dir = response.get('curr_dir')
+                    print(message, end="")
+
             elif args[0] == 'cd':
                 if len(args) != 2:
                     print("Usage: cd <directory_path>")

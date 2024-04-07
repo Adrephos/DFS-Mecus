@@ -128,6 +128,24 @@ class FilesTree:
 
         return "", file_list + directory_list
 
+    def rm(self, path):
+        path, file_name = path_and_name(path)
+
+        in_dir, success = self.get_dir(path)
+
+        if not success:
+            return "No such a file or directory\n", self.full_path(in_dir)
+
+        if file_name in in_dir.files:
+            del in_dir.files[file_name]
+            return "", self.full_path(in_dir)
+
+        if file_name in in_dir.subdirs:
+            del in_dir.subdirs[file_name]
+            return "", self.full_path(in_dir)
+
+        return "No such a file or directory\n", self.full_path(in_dir)
+
     def full_path(self, dir: DirectoryNode):
         path = []
         while dir.name != '/':
