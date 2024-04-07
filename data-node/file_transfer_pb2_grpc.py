@@ -19,7 +19,7 @@ class FileTransferServiceStub(object):
                 request_serializer=file__transfer__pb2.FileChunk.SerializeToString,
                 response_deserializer=file__transfer__pb2.UploadStatus.FromString,
                 )
-        self.Download = channel.unary_stream(
+        self.Download = channel.unary_unary(
                 '/filetransfer.FileTransferService/Download',
                 request_serializer=file__transfer__pb2.FileDownloadRequest.SerializeToString,
                 response_deserializer=file__transfer__pb2.FileDownloadResponse.FromString,
@@ -49,7 +49,7 @@ def add_FileTransferServiceServicer_to_server(servicer, server):
                     request_deserializer=file__transfer__pb2.FileChunk.FromString,
                     response_serializer=file__transfer__pb2.UploadStatus.SerializeToString,
             ),
-            'Download': grpc.unary_stream_rpc_method_handler(
+            'Download': grpc.unary_unary_rpc_method_handler(
                     servicer.Download,
                     request_deserializer=file__transfer__pb2.FileDownloadRequest.FromString,
                     response_serializer=file__transfer__pb2.FileDownloadResponse.SerializeToString,
@@ -92,7 +92,7 @@ class FileTransferService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/filetransfer.FileTransferService/Download',
+        return grpc.experimental.unary_unary(request, target, '/filetransfer.FileTransferService/Download',
             file__transfer__pb2.FileDownloadRequest.SerializeToString,
             file__transfer__pb2.FileDownloadResponse.FromString,
             options, channel_credentials,
