@@ -35,3 +35,22 @@ class FileDownloadResponse(_message.Message):
     DATA_FIELD_NUMBER: _ClassVar[int]
     data: bytes
     def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+
+class ChunkRequest(_message.Message):
+    __slots__ = ("chunk_name",)
+    CHUNK_NAME_FIELD_NUMBER: _ClassVar[int]
+    chunk_name: str
+    def __init__(self, chunk_name: _Optional[str] = ...) -> None: ...
+
+class ChunkRespond(_message.Message):
+    __slots__ = ("chunk_respond",)
+    CHUNK_RESPOND_FIELD_NUMBER: _ClassVar[int]
+    chunk_respond: str
+    def __init__(self, chunk_respond: _Optional[str] = ...) -> None: ...
+
+class ChunkData(_message.Message):
+    __slots__ = ("data",)
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    data: bytes
+    def __init__(self, data: _Optional[bytes] = ...) -> None: ...
+

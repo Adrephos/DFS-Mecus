@@ -24,6 +24,11 @@ class FileTransferServiceStub(object):
                 request_serializer=file__transfer__pb2.FileDownloadRequest.SerializeToString,
                 response_deserializer=file__transfer__pb2.FileDownloadResponse.FromString,
                 )
+        self.GetChunk = channel.unary_unary(
+                '/filetransfer.FileTransferService/GetChunk',
+                request_serializer=file__transfer__pb2.ChunkRequest.SerializeToString,
+                response_deserializer=file__transfer__pb2.ChunkRespond.FromString,
+                )
 
 
 class FileTransferServiceServicer(object):
@@ -41,6 +46,12 @@ class FileTransferServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetChunk(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_FileTransferServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -53,6 +64,11 @@ def add_FileTransferServiceServicer_to_server(servicer, server):
                     servicer.Download,
                     request_deserializer=file__transfer__pb2.FileDownloadRequest.FromString,
                     response_serializer=file__transfer__pb2.FileDownloadResponse.SerializeToString,
+            ),
+            'GetChunk': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetChunk,
+                    request_deserializer=file__transfer__pb2.ChunkRequest.FromString,
+                    response_serializer=file__transfer__pb2.ChunkRespond.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -95,5 +111,22 @@ class FileTransferService(object):
         return grpc.experimental.unary_stream(request, target, '/filetransfer.FileTransferService/Download',
             file__transfer__pb2.FileDownloadRequest.SerializeToString,
             file__transfer__pb2.FileDownloadResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetChunk(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/filetransfer.FileTransferService/GetChunk',
+            file__transfer__pb2.ChunkRequest.SerializeToString,
+            file__transfer__pb2.ChunkRespond.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

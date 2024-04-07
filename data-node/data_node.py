@@ -7,8 +7,17 @@ import socket
 from concurrent import futures
 
 import grpc
+
 from file_transfer_pb2 import UploadStatus
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server
+
+from file_transfer_pb2 import FileChunk
+from file_transfer_pb2 import ChunkRequest
+from file_transfer_pb2_grpc import FileTransferServiceStub, FileTransferServiceServicer, add_FileTransferServiceServicer_to_server
+
+import threading
+
+
 
 from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS, PORT
 
@@ -58,6 +67,19 @@ def keep_alive():
 
         time.sleep(KEEPALIVE_SLEEP_SECONDS)
 
+class data_service_to_client(FileTransferServiceServicer):
+
+    def get_chunk(self, request, context):
+        chunk_id = 69420
+        print(f"Received request for chunk {chunk_id}")
+        return ("Hello World, chunk_id: " + str(chunk_id))
+
+def serve_upload_to_client():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))  
+    add_FileTransferServiceServicer_to_server(data_service_to_client(), server)
+    server.add_insecure_port('[::]:50051')
+    server.start()
+    server.wait_for_termination()
 
 # gRPC DataNodeService
 class DataNodeService(FileTransferServiceServicer):
@@ -92,3 +114,6 @@ if __name__ == '__main__':
     grpc_thread.start()
 
     keep_alive()
+
+    grpc_thread = threading.Thread(target=serve_upload_to_client)
+    grpc_thread.start()
