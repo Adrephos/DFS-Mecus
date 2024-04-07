@@ -2,7 +2,7 @@ import os
 import threading
 import requests
 import time
-from flask import Flask, request, jsonify
+from flask import Flask
 import socket
 from concurrent import futures
 
@@ -10,23 +10,11 @@ import grpc
 from file_transfer_pb2 import UploadStatus
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server
 
-from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS, PORT
+from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS, PORT, MY_IP
 
 # Inicialización y configuración de Flask
 # Server
 app = Flask(__name__)
-
-
-# Util functions
-def get_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except socket.error:
-        return 'Unknown IP'
 
 
 # Funciones de Flask
@@ -85,7 +73,7 @@ def serve():
 
 if __name__ == '__main__':
     # Registro en el NameNode
-    register_namenode(URL, NAME, f'{get_ip()}:{PORT}')
+    register_namenode(URL, NAME, f'{MY_IP}:{PORT}')
 
     # Inicia el hilo de gRPC Server
     grpc_thread = threading.Thread(target=serve)
