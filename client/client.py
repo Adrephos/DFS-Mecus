@@ -247,7 +247,7 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
         data_node_ip = data_node['ip']
 
         # Establece la conexión con el data_node
-        channel = grpc.insecure_channel(f'{data_node_ip}:{DATA_PORT}')
+        channel = grpc.insecure_channel(f'{data_node_ip}')
         stub = FileTransferServiceStub(channel)
 
         last_full_path = full_path.replace('/', ':')

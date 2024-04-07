@@ -5,12 +5,12 @@ import time
 from flask import Flask, request, jsonify
 import socket
 from concurrent import futures
-    
+
 import grpc
 from file_transfer_pb2 import UploadStatus
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server
 
-from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS
+from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS, PORT
 
 # Inicialización y configuración de Flask
 # Server
@@ -30,8 +30,8 @@ def get_ip():
 
 
 # Funciones de Flask
-def register_namenode(url, name, ip):
-    message = {'name': name, 'ip': ip}
+def register_namenode(url, name, data_node_url):
+    message = {'name': name, 'ip': data_node_url}
     try:
         response = requests.post(f'{url}/register_dn', json=message)
     except requests.exceptions.RequestException as e:
@@ -66,7 +66,8 @@ class DataNodeService(FileTransferServiceServicer):
             os.makedirs('./chunks', exist_ok=True)
             with open(f"./chunks/{request.filename}_{request.chunk_id}.chunk", "wb") as file:
                 file.write(request.data)
-                print(f"Chunk {request.chunk_id} de {request.filename} recibido.")
+                print(
+                    f"Chunk {request.chunk_id} de {request.filename} recibido.")
             return UploadStatus(success=True, message="Chunk recibido exitosamente.")
         except Exception as e:
             return UploadStatus(success=False, message=str(e))
@@ -76,7 +77,7 @@ class DataNodeService(FileTransferServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_FileTransferServiceServicer_to_server(DataNodeService(), server)
-    server.add_insecure_port('0.0.0.0:5010')
+    server.add_insecure_port('0.0.0.0:' + str(PORT))
     server.start()
     print("Data Node gRPC Server running...")
     server.wait_for_termination()
@@ -84,7 +85,7 @@ def serve():
 
 if __name__ == '__main__':
     # Registro en el NameNode
-    register_namenode(URL, NAME, get_ip())
+    register_namenode(URL, NAME, f'{get_ip()}:{PORT}')
 
     # Inicia el hilo de gRPC Server
     grpc_thread = threading.Thread(target=serve)
