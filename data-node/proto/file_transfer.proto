@@ -22,7 +22,23 @@ message FileDownloadResponse {
   bytes data = 1;
 }
 
+message ChunkRequest {
+    string chunk_name = 1;
+}
+
+message ChunkRespond {
+    string chunk_respond = 1;
+}
+
+message ChunkData {
+    bytes data = 1;
+}
+
 service FileTransferService {
   rpc Upload(FileChunk) returns (UploadStatus) {}
   rpc Download(FileDownloadRequest) returns (stream FileDownloadResponse) {}
+  rpc GetChunk (ChunkRequest) returns (ChunkRespond) {}
 }
+
+
+

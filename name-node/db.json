@@ -1,1 +1,1 @@
-{"clients": {"1": {"name": "a", "password": "$2b$12$SbfKmGx72xTvN7DD1yIpWeg21moEkmgNccvVK0X3Dg1ExmwtpHh0K", "ip": "192.168.0.12"}}, "trees": {"1": {"name": "a", "tree": {}}}}
+{"clients": {"1": {"name": "a", "password": "$2b$12$SbfKmGx72xTvN7DD1yIpWeg21moEkmgNccvVK0X3Dg1ExmwtpHh0K", "ip": "192.168.0.12"}}, "trees": {"1": {"name": "a", "tree": {}}}, "data_nodes": {}}

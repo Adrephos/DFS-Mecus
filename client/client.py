@@ -6,6 +6,7 @@ import random
 
 import grpc
 from file_transfer_pb2 import FileChunk
+from file_transfer_pb2 import ChunkRequest
 from file_transfer_pb2_grpc import FileTransferServiceStub
 
 from bootstrap import URL, URL_SLAVE, CHUNK_SIZE
@@ -191,25 +192,51 @@ def send_chunks(hash_value, chunks, original_file_name):
 # 3. save file
 
 
-def download_file(user, dfs_path: str, local_path: str):
-    response = command(user, dfs_path, 'file_info')
-    message = response.get('message')
-    if message != "":
-        print(message)
-        return
+# def download_file(user, dfs_path: str, local_path: str):
+#     response = command(user, dfs_path, 'file_info')
+#     message = response.get('message')
+#     if message != "":
+#         print(message)
+#         return
 
-    # usar esto para descargar el archivo
-    file_info = response.get('file_info')
-    hash = file_info.get('hash')
-    chunks = file_info.get('chunks')
-    chunksReplicas = file_info.get('chunksReplicas')
+#     # usar esto para descargar el archivo
+#     file_info = response.get('file_info')
+#     hash = file_info.get('hash')
+#     chunks = file_info.get('chunks')
+#     chunksReplicas = file_info.get('chunksReplicas')
 
-    # download chunks
+#     # download chunks
 
-    # rebuild file
-    # save file
-    # {
-    #     'chunk-0': '
+        # # Establece la conexión con el data_node
+        # channel = grpc.insecure_channel(data_node_ip)
+        # stub = FileTransferServiceStub(channel)
+
+        # # Crea el mensaje FileChunk a enviar
+        # chunk = FileChunk(
+        #     filename=original_file_name,  # Envía el nombre original del archivo.
+        #     chunk_id=chunk_id,
+        #     data=chunk_data,
+        #     hash=hash_value
+        # )
+
+        # # Envía el chunk al data_node seleccionado
+        # response = stub.Upload(chunk)
+
+def get_chunk_from_datanode(chunk_name: str, data_node_ip: str):
+    
+    # Establish gRPC Channel
+    channel = grpc.insecure_channel('127.0.0.1:5000')
+    stub = FileTransferServiceStub(channel)
+
+    # CREATE THE MESSAGE!!, request message
+    request = ChunkRequest(chunk_name="ayudaDiosito")
+
+    # Send Request and Get Response
+    response = stub.GetChunk(request)
+    print("El response:")
+    print(response)
+    return response.data  # malo
+
 
 def rebuild_file(name: str):
     try:
@@ -238,6 +265,7 @@ def rebuild_file(name: str):
             file_temp = open(file_name, 'rb')
         except Exception:
             break
+
 #--------------------------------------------------------------------------------------------------------------
 
 
@@ -326,6 +354,9 @@ def run():
                 print("\nRebuild file")
                 file = input('File name: ')
                 rebuild_file(file)
+
+                #nuevo
+                get_chunk_from_datanode("ayudaDiosito", "")
 
             elif args[0] == 'mkdir':
                 if len(args) != 2:
