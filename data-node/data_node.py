@@ -52,7 +52,7 @@ class DataNodeService(FileTransferServiceServicer):
     def Upload(self, request, context):
         try:
             os.makedirs('./chunks', exist_ok=True)
-            with open(f"./chunks/{request.filename}_{request.chunk_id}.chunk", "wb") as file:
+            with open(f"./chunks/{request.filename}.chunk{request.chunk_id}", "wb") as file:
                 file.write(request.data)
                 print(
                     f"Chunk {request.chunk_id} de {request.filename} recibido.")

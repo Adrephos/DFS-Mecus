@@ -158,14 +158,6 @@ def split_file(path: str, chunk_size: int):
     return hash.hexdigest(), chunks
 
 
-# --------------------------------------------------------------------------------------------------------------
-# RECONSTRUCT
-
-# 1. download chunks
-# 2. rebuild file
-# 3. save file
-
-
 def download_file(user, dfs_path: str, local_path: str):
     response = command(user, dfs_path, 'file_info')
     message = response.get('message')
@@ -199,22 +191,20 @@ def rebuild_file(name: str):
     file_name = './chunks/' + name + '.chunk' + str(chunk)
     try:
         file_temp = open(file_name, 'rb')
+        while file_temp:
+            print(f'- chunk #{chunk} done')
+            byte = file_temp.read()
+            file_m.write(byte)
+
+            chunk += 1
+
+            file_name = './chunks/' + name + '.chunk' + str(chunk)
+            try:
+                file_temp = open(file_name, 'rb')
+            except Exception:
+                break
     except Exception:
         print('not a valid file to reconstruct')
-        exit()
-    while file_temp:
-        print(f'- chunk #{chunk} done')
-        byte = file_temp.read()
-        file_m.write(byte)
-
-        chunk += 1
-
-        file_name = './chunks/' + name + '.chunk' + str(chunk)
-        try:
-            file_temp = open(file_name, 'rb')
-        except Exception:
-            break
-# --------------------------------------------------------------------------------------------------------------
 
 
 def upload_file(user, dfs_path: str, local_path: str, nodes):
@@ -250,10 +240,10 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
         channel = grpc.insecure_channel(f'{data_node_ip}')
         stub = FileTransferServiceStub(channel)
 
-        last_full_path = full_path.replace('/', ':')
+        last_full_path = full_path.replace('/', '$')
 
         chunk = FileChunk(
-            filename=f'{user}${last_full_path}',
+            filename=f'{user}_{last_full_path}',
             chunk_id=chunk_id,
             data=chunk_data,
             hash=hash
