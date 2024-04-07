@@ -217,7 +217,7 @@ def rebuild_file(name: str):
 # --------------------------------------------------------------------------------------------------------------
 
 
-def upload_file(user, dfs_path: str, local_path: str, original_file_name, nodes):
+def upload_file(user, dfs_path: str, local_path: str, nodes):
     file_name = os.path.basename(local_path)
     if dfs_path[-1] != '/':
         dfs_path += '/'
@@ -240,6 +240,7 @@ def upload_file(user, dfs_path: str, local_path: str, original_file_name, nodes)
         return
 
     # Envío de los chunks
+    ip_chunks = {}
     for chunk_id, chunk_data in enumerate(chunks):
         # Selección aleatoria de un data_node
         data_node = random.choice(nodes)
@@ -261,15 +262,16 @@ def upload_file(user, dfs_path: str, local_path: str, original_file_name, nodes)
         # Envía el chunk al data_node seleccionado
         response = stub.Upload(chunk)
 
-
         if response.success:
+            ip_chunks[chunk_id] = data_node_ip
             print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
         else:
             print(f"Error al enviar chunk {chunk_id} a {data_node['name']}: {response.message}")
+            return
 
         channel.close()
 
-    add_file(user, full_path, hash, {}, {})
+    add_file(user, full_path, hash, ip_chunks, {})
 
 
 def run():
@@ -297,26 +299,18 @@ def run():
             continue
 
         if login_flag:
-            if args[0] == 'available':
-                data_nodes = available()
-
-            elif args[0] == 'test' and len(args) == 2:
-                split_file(args[1], CHUNK_SIZE)
-
-            elif args[0] == 'upload':
+            if args[0] == 'upload':
                 if len(args) != 2:
                     print("Usage: upload <file_path_in_dfs>")
-                elif len(args) == 2 and len(data_nodes) >= 1:
-                    print(
-                        '\u001b[33mEnter the file path to upload to DFS-Mecus\u001b[36m')
-                    path = input('File path (from root): \u001b[37m')
-                    file_name = get_filename_from_path(path)
-                    upload_file(user, args[1], path, file_name, data_nodes)
-
-                else:
-                    print("No DataNodes available. "
-                          "Maybe this can be solved by doing 'available' "
-                          "command before 'upload'")
+                elif len(args) == 2:
+                    data_nodes = available()
+                    if len(data_nodes) >= 1:
+                        print(
+                            '\u001b[33mEnter the file path to upload to DFS-Mecus\u001b[36m')
+                        path = input('File path (from root): \u001b[37m')
+                        upload_file(user, args[1], path, data_nodes)
+                    else:
+                        print("No DataNodes available, sorry :(")
 
             elif args[0] == 'download':
                 # PONGAN AQUÍ EL CÓDIGO DE ADQUISICIÓN DE LOS CHUNKS

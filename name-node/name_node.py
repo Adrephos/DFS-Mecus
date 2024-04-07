@@ -34,8 +34,6 @@ app = Flask(__name__)
 
 
 # Funciones útiles
-
-
 # Subir la base de datos al slave
 def uploadDB():
     with grpc.insecure_channel(SLAVE_URL) as channel:
