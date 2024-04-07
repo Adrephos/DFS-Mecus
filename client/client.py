@@ -34,8 +34,11 @@ def available():
     try:
         response = requests.post(f"{URL}/available")
     except requests.exceptions.ConnectionError:
-        print('Error when connecting to server')
-        return
+        try:
+            response = requests.post(f"{URL_SLAVE}/available")
+        except requests.exceptions.ConnectionError:
+            print('Error when connecting to server')
+            return
 
     available_data_nodes = []
 
@@ -231,6 +234,7 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
 
     # Envío de los chunks
     ip_chunks = {}
+    ip_chunks_replicas = {}
     for chunk_id, chunk_data in enumerate(chunks):
         # Selección aleatoria de un data_node
         data_node = random.choice(nodes)
@@ -246,6 +250,7 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
             filename=f'{user}_{last_full_path}',
             chunk_id=chunk_id,
             data=chunk_data,
+            replicate=True,
             hash=hash
         )
 
@@ -254,6 +259,7 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
 
         if response.success:
             ip_chunks[chunk_id] = data_node_ip
+            ip_chunks_replicas[chunk_id] = response.replica_url
             print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
         else:
             print(f"Error al enviar chunk {chunk_id} a {data_node['name']}: {response.message}")
@@ -261,7 +267,7 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
 
         channel.close()
 
-    add_file(user, full_path, hash, ip_chunks, {})
+    add_file(user, full_path, hash, ip_chunks, ip_chunks_replicas)
 
 
 def run():

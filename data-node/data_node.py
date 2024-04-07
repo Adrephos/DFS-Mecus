@@ -2,15 +2,15 @@ import os
 import threading
 import requests
 import time
+import random
 from flask import Flask
-import socket
 from concurrent import futures
 
 import grpc
-from file_transfer_pb2 import UploadStatus
-from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server
+from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server, FileTransferServiceStub
+from file_transfer_pb2 import UploadStatus, FileChunk
 
-from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS, PORT, MY_IP
+from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, PORT, MY_IP
 
 # Inicialización y configuración de Flask
 # Server
@@ -37,17 +37,69 @@ def keep_alive():
     while True:
         try:
             response = requests.post(f'{URL}/keep_alive', json={'name': NAME})
-            if response.status_code == 200:
-                print("keepAlive successful!")
-            else:
-                print(f"keepAlive failed: {response.json().get('response')}")
-        except requests.exceptions.RequestException as e:
-            print(f"Connection to server failed: {e}")
+        except requests.exceptions.RequestException:
+            try:
+                register_namenode(URL_SLAVE, NAME, f'{MY_IP}:{PORT}')
+                response = requests.post(
+                    f'{URL_SLAVE}/keep_alive', json={'name': NAME})
+            except requests.exceptions.RequestException as e:
+                print(f"Connection to server failed: {e}")
+
+        if response.status_code == 200:
+            print("keepAlive successful!")
+        else:
+            print(f"keepAlive failed: {response.json().get('response')}")
 
         time.sleep(KEEPALIVE_SLEEP_SECONDS)
 
 
+def get_data_nodes():
+    try:
+        response = requests.post(f'{URL}/available')
+    except requests.exceptions.ConnectionError:
+        try:
+            response = requests.post(f'{URL_SLAVE}/available')
+        except requests.exceptions.ConnectionError as e:
+            print(f"Connection to server failed: {e}")
+            return []
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"get_data_nodes failed: {response.json().get('response')}")
+        return []
+
+# remove this node from datanodes array
+
+
+def remove_self(data_nodes):
+    new_data_nodes = []
+    for data_node in data_nodes:
+        if data_node['ip'] != f'{MY_IP}:{PORT}':
+            new_data_nodes.append(data_node)
+    return new_data_nodes
+
+
 # gRPC DataNodeService
+def replicate_chunk(data_node, request):
+    try:
+        with grpc.insecure_channel(data_node) as channel:
+            stub = FileTransferServiceStub(channel)
+            response = stub.Upload(
+                FileChunk(
+                    filename=request.filename,
+                    chunk_id=request.chunk_id,
+                    data=request.data,
+                    replicate=False,
+                    hash=request.hash
+                ))
+            print(
+                f"Chunk {request.chunk_id} de {request.filename} replicado en {request.data_node}")
+            return response
+    except Exception as e:
+        print(f"Error replicating chunk: {e}")
+        return UploadStatus(success=False, message=str(e))
+
+
 class DataNodeService(FileTransferServiceServicer):
     def Upload(self, request, context):
         try:
@@ -56,7 +108,15 @@ class DataNodeService(FileTransferServiceServicer):
                 file.write(request.data)
                 print(
                     f"Chunk {request.chunk_id} de {request.filename} recibido.")
-            return UploadStatus(success=True, message="Chunk recibido exitosamente.")
+            # replicate chunk in other data node
+            try:
+                data_nodes = remove_self(get_data_nodes())
+                data_node = random.choice(data_nodes)
+            except Exception as e:
+                print(f"Error replicating chunk: {e}")
+            if request.replicate:
+                replicate_chunk(data_node['ip'], request)
+            return UploadStatus(success=True, replica_url=data_node['ip'], message="Chunk recibido.")
         except Exception as e:
             return UploadStatus(success=False, message=str(e))
 

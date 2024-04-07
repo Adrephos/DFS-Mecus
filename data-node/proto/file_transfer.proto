@@ -6,12 +6,14 @@ message FileChunk {
   string filename = 1;
   int32 chunk_id = 2;
   bytes data = 3;
-  string hash = 4;
+  bool replicate = 4;
+  string hash = 5;
 }
 
 message UploadStatus {
   bool success = 1;
-  string message = 2;
+  string replica_url = 2;
+  string message = 3;
 }
 
 message FileDownloadRequest {

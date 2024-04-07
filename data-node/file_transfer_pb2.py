@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x66ile_transfer.proto\x12\x0c\x66iletransfer\"K\n\tFileChunk\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08\x63hunk_id\x18\x02 \x01(\x05\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x12\x0c\n\x04hash\x18\x04 \x01(\t\"0\n\x0cUploadStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"\'\n\x13\x46ileDownloadRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"$\n\x14\x46ileDownloadResponse\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x32\xab\x01\n\x13\x46ileTransferService\x12?\n\x06Upload\x12\x17.filetransfer.FileChunk\x1a\x1a.filetransfer.UploadStatus\"\x00\x12S\n\x08\x44ownload\x12!.filetransfer.FileDownloadRequest\x1a\".filetransfer.FileDownloadResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x66ile_transfer.proto\x12\x0c\x66iletransfer\"^\n\tFileChunk\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08\x63hunk_id\x18\x02 \x01(\x05\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x12\x11\n\treplicate\x18\x04 \x01(\x08\x12\x0c\n\x04hash\x18\x05 \x01(\t\"E\n\x0cUploadStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x13\n\x0breplica_url\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\"\'\n\x13\x46ileDownloadRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"$\n\x14\x46ileDownloadResponse\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x32\xab\x01\n\x13\x46ileTransferService\x12?\n\x06Upload\x12\x17.filetransfer.FileChunk\x1a\x1a.filetransfer.UploadStatus\"\x00\x12S\n\x08\x44ownload\x12!.filetransfer.FileDownloadRequest\x1a\".filetransfer.FileDownloadResponse\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,13 +22,13 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'file_transfer_pb2', _global
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _globals['_FILECHUNK']._serialized_start=37
-  _globals['_FILECHUNK']._serialized_end=112
-  _globals['_UPLOADSTATUS']._serialized_start=114
-  _globals['_UPLOADSTATUS']._serialized_end=162
-  _globals['_FILEDOWNLOADREQUEST']._serialized_start=164
-  _globals['_FILEDOWNLOADREQUEST']._serialized_end=203
-  _globals['_FILEDOWNLOADRESPONSE']._serialized_start=205
-  _globals['_FILEDOWNLOADRESPONSE']._serialized_end=241
-  _globals['_FILETRANSFERSERVICE']._serialized_start=244
-  _globals['_FILETRANSFERSERVICE']._serialized_end=415
+  _globals['_FILECHUNK']._serialized_end=131
+  _globals['_UPLOADSTATUS']._serialized_start=133
+  _globals['_UPLOADSTATUS']._serialized_end=202
+  _globals['_FILEDOWNLOADREQUEST']._serialized_start=204
+  _globals['_FILEDOWNLOADREQUEST']._serialized_end=243
+  _globals['_FILEDOWNLOADRESPONSE']._serialized_start=245
+  _globals['_FILEDOWNLOADRESPONSE']._serialized_end=281
+  _globals['_FILETRANSFERSERVICE']._serialized_start=284
+  _globals['_FILETRANSFERSERVICE']._serialized_end=455
 # @@protoc_insertion_point(module_scope)
