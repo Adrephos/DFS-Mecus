@@ -3,6 +3,10 @@ import requests
 import socket
 import hashlib
 
+import grpc
+import file_transfer_pb2
+import file_transfer_pb2_grpc
+
 from bootstrap import URL, URL_SLAVE, CHUNK_SIZE
 
 
@@ -33,11 +37,9 @@ def available():
         print('Error when connecting to server')
         return
 
-    # MEJOR QUE GUARDE ESO COMO UN MAPA XD
     available_data_nodes = []
 
     if response.status_code == 200:
-        # available_data_nodes.append(available_data_nodes)
         available_nodes = response.json()
         if available_nodes:
             print("Available DataNodes:")
@@ -45,8 +47,8 @@ def available():
                 available_data_nodes.append(
                     {'name': node['name'], 'ip': node['ip']})
 
-                # TIENE QUE SER EN UN RETURN
             print(available_data_nodes)
+            return available_data_nodes
         else:
             print("No available DataNodes.")
     else:
@@ -138,18 +140,10 @@ def split_file(path: str, chunk_size: int):
     while byte:
         hash.update(byte)
         chunks.append(byte)
-        # PUEDE MANDAR LOS BYTES A LOS DATA-NODES, EN VEZ DE GUARDARLOS ACÁ
-        # USAR HILOS PARA MANDARLOS A LOS DATA-NODES, PORQUE
 
         file_n = path.split('/')[-1] + '.chunk' + str(chunk)
-        # QUE HAYA UN ARRAY CON TODOS LOS CHUNKS, CON TODOS LOS BINARIOS.
         file_t = open('./chunks/' + file_n, 'wb')
-        # Y DESPUES QUE CADA HILO MANDA UN CHUNK A UN DATA-NODE
-        # Y DESPUES, QUE ESOS HILOS CREEN EL DICCIONARIO CON DONDE MANDARON LOS CHUNKS
-        # ESE DATA NODE VA A QUEDAR CON EL CHUNK. Y LUEGO, SE LO DEBE ENVIAR A OTRO DATA NODE QUE TENGA LA REPLICA
-        # LUEGO, ESE DATA NODE, LE TIENE QUE DECIR AL CLIENTE DONDE ESTA LA REPLICA
 
-        # EL CLIENTE LE TIENE QUE DECIR AL NAME_NODE A DONDE MANDÓ LOS CHUNKS (QUIZAS LO HACE JUAN XD)
         file_t.write(byte)
         file_t.close()
 
@@ -223,6 +217,7 @@ def upload_file(user, dfs_path: str, local_path: str):
 
     add_file(user, full_path, hash, {}, {})
 
+
 def download_file(user, dfs_path: str, local_path: str):
     response = command(user, dfs_path, 'file_info')
     message = response.get('message')
@@ -258,6 +253,8 @@ def run():
 
     curr_dir = ''
     prompt = '\n\u001b[31mPlease login or register to continue\n\u001b[36mType "help" for more information'
+    data_nodes = []
+
     while True:
         print(
             prompt + f'\u001b[33m{curr_dir}')
@@ -269,9 +266,10 @@ def run():
 
         if login_flag:
             if args[0] == 'available':
-                # AQUÍ VA EL CÓDIGO PARA CONSULTAR LA DISPONIBILIDAD DE LOS DATA-NODES
-                # GUARDALOS EN UN ARRAY PARA USARLOS EN EL COMANDO SEND
-                available()
+                data_nodes = available()
+
+            elif args[0] == 'test' and len(args):
+                pass
 
             elif args[0] == 'upload':
                 if len(args) != 2:

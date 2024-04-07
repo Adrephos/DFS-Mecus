@@ -1,4 +1,4 @@
-from bootstrap import HOST, PORT, LEADER, SLAVE_URL, KEEPALVIE_SLEEP_SECONDS, SYNC_PORT
+from bootstrap import HOST, PORT, LEADER, SLAVE_URL, KEEPALIVE_SLEEP_SECONDS, SYNC_PORT
 
 from flask import Flask, request, jsonify
 
@@ -12,6 +12,7 @@ import time
 import grpc
 import NameNode_pb2_grpc
 import NameNode_pb2
+
 from concurrent import futures
 from slave_service import DBService
 
@@ -104,7 +105,7 @@ def heartbeat_to_slave():
         except Exception:
             print("Error sending heartbeat to slave")
         print("Waiting for next heartbeat")
-        time.sleep(KEEPALVIE_SLEEP_SECONDS)
+        time.sleep(KEEPALIVE_SLEEP_SECONDS)
 
 
 def hash_and_salt(password: str):
@@ -120,7 +121,6 @@ def update_user_tree(name):
 
 
 # Funciones con los clientes
-
 @app.route('/available', methods=['POST'])
 def available():
     available_nodes = data_nodes.all()
@@ -300,14 +300,14 @@ def clean_up_data_nodes():
     while True:
         now = datetime.now()
         # 10 segundos sin señales y lo considera down
-        threshold_time = now - timedelta(seconds=KEEPALVIE_SLEEP_SECONDS * 2)
+        threshold_time = now - timedelta(seconds=KEEPALIVE_SLEEP_SECONDS * 2)
         for data_node in data_nodes.all():
             if 'last_seen' in data_node:
                 last_seen = datetime.fromisoformat(data_node['last_seen'])
                 if last_seen < threshold_time:
                     data_nodes.remove(doc_ids=[data_node.doc_id])
                     print(f"Removed inactive DataNode: {data_node['name']}")
-        time.sleep(KEEPALVIE_SLEEP_SECONDS)  # Revisa cada 5 segundos
+        time.sleep(KEEPALIVE_SLEEP_SECONDS)  # Revisa cada 5 segundos
 
 
 def serve():

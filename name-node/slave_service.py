@@ -1,7 +1,7 @@
 import NameNode_pb2_grpc
 import NameNode_pb2
 from tinydb import TinyDB
-from bootstrap import KEEPALVIE_SLEEP_SECONDS
+from bootstrap import KEEPALIVE_SLEEP_SECONDS
 from datetime import datetime, timedelta
 
 
@@ -33,7 +33,7 @@ class DBService(NameNode_pb2_grpc.DBServiceServicer):
 
     def DownloadDB(self, request, context):
         now = datetime.now()
-        threshold = now - timedelta(seconds=KEEPALVIE_SLEEP_SECONDS * 2)
+        threshold = now - timedelta(seconds=KEEPALIVE_SLEEP_SECONDS * 2)
 
         if self.last_heartbeat > threshold:
             return NameNode_pb2.DownloadDBResponse(

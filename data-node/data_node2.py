@@ -3,11 +3,7 @@ import time
 from flask import Flask, request, jsonify
 import socket
 
-import grpc
-import file_transfer_pb2
-import file_transfer_pb2_grpc
-
-from bootstrap import URL, NAME, KEEPALIVE_SLEEP_SECONDS
+from bootstrap2 import URL, NAME, KEEPALIVE_SLEEP_SECONDS
 
 # Inicialización y configuración de Flask
 # Server
