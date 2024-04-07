@@ -10,7 +10,6 @@ from file_transfer_pb2_grpc import FileTransferServiceStub
 
 from bootstrap import URL, URL_SLAVE, CHUNK_SIZE, DATA_PORT
 
-
 # Util Functions
 def parse(message: str):
     parse_message = message.split()
@@ -30,7 +29,7 @@ def get_ip():
 
 
 # Flask Functions
-def available():
+def available_data_nodes():
     try:
         response = requests.post(f"{URL}/available")
     except requests.exceptions.ConnectionError:
@@ -176,9 +175,9 @@ def download_file(user, dfs_path: str, local_path: str):
         data = f.read()
         hash_final = hashlib.sha256(data).hexdigest()
         if hash_final != hash_original:
-            print("Error: El hash del archivo no coincide. Descarga fallida o archivo corrupto.")
+            print("Error: File hash mismatch. Download failed or file is corrupted.")
         else:
-            print("Archivo descargado y verificado con éxito.")
+            print("File downloaded and verified successfully")
 
 
 def rebuild_file(name: str):
@@ -206,7 +205,7 @@ def rebuild_file(name: str):
             except Exception:
                 break
     except Exception:
-        print('not a valid file to reconstruct')
+        print('Error: not a valid file to reconstruct')
 
 
 def upload_file(user, dfs_path: str, local_path: str, nodes):
@@ -234,7 +233,7 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
     # Envío de los chunks
     ip_chunks = {}
     for chunk_id, chunk_data in enumerate(chunks):
-        # Selección aleatoria de un data_node
+        
         data_node = random.choice(nodes)
         data_node_ip = data_node['ip']
 
@@ -255,10 +254,10 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
         response = stub.Upload(chunk)
 
         if response.success:
-            ip_chunks[chunk_id] = data_node_ip
-            print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
+            ip_chunks[chunk_id] = data_node_ip #enviado correctamente a
+            print(f"Chunk {chunk_id} successfully sent to {data_node['name']}.")
         else:
-            print(f"Error al enviar chunk {chunk_id} a {data_node['name']}: {response.message}")
+            print(f"Error sending chunk {chunk_id} to {data_node['name']}: {response.message}")
             return
 
         channel.close()
@@ -269,7 +268,6 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
 def run():
     login_flag = False
     user = ""
-    # This print this ascii art
     print("\u001b[32m")
     print("  ____  _____ ____        __  __                     ")
     print(" |  _ \\|  ___/ ___|      |  \\/  | ___  ___ _   _ ___ ")
@@ -295,14 +293,14 @@ def run():
                 if len(args) != 2:
                     print("Usage: upload <file_path_in_dfs>")
                 elif len(args) == 2:
-                    data_nodes = available()
+                    data_nodes = available_data_nodes()
                     if len(data_nodes) >= 1:
                         print(
                             '\u001b[33mEnter the file path to upload to DFS-Mecus\u001b[36m')
                         path = input('File path (from root): \u001b[37m')
                         upload_file(user, args[1], path, data_nodes)
                     else:
-                        print("No DataNodes available, sorry :(")
+                        print("No DataNodes available, cannot upload files :(")
 
             elif args[0] == 'download':
                 if len(args) != 3:
@@ -345,20 +343,7 @@ def run():
                     full_path = response.get('curr_dir')
                     print(full_path)
 
-            # Para testear este se usa solo cuando se va a enviar un archivo
-            elif args[0] == 'can_add':
-                if len(args) != 2:
-                    print("Usage: can_add <file_path>")
-                else:
-                    response = command(user, args[1], 'can_add')
-                    message = response.get('message')
-                    curr_dir = response.get('curr_dir')
-                    full_path = response.get('full_path')
-                    if message == "":
-                        print("Full file path:", full_path)
-                    print(message)
-
-            # Para testear este se usa solo cuando se va a enviar un archivo
+            #This is only used for testing when a file is going to be sent
             elif args[0] == 'file_info':
                 if len(args) != 2:
                     print("Usage: file_info <file_path>")
@@ -394,24 +379,21 @@ def run():
 
             elif args[0] == 'help' and len(args) == 1:
                 print('available commands:')
-                print('  available          - Check the availability of the data-nodes')
                 print("  cd <path>          - Change directory")
                 print('  clear              - Clear the screen')
-                print('  download <path>    - IDK')
+                print('  upload <path_in_dfs>       - Upload a file')
+                print('  download <path>    - Download a file')
                 print('  help               - Show this help') 
                 print('  pwd                - Show current directory')
                 print('  logout             - Stop program')
                 print("  ls                 - List directory contents")
                 print("  mkdir <path>       - Create a directory")
-                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                # PONGAN QUE ARGUMENTOS TIENE Y QUE HACE CUANDO LO HAGAN
-                print('  upload <path_in_dfs>       - Upload a file')
 
             elif args[0] == 'clear':
                 os.system('clear')
 
             else:
-                print('Unknown command')
+                print('Unknown command. Enter "help" for more information.')
 
         elif args[0] == 'login' and len(args) == 3:
             login = register_login(
@@ -444,9 +426,8 @@ def run():
             print('  register <name> <password> - Just a simple register')
 
         else:
-            print('Unknown command')
+            print('Unknown command. Enter "help" for more information.')
 
 
 if __name__ == '__main__':
-    # prompt to split a file
     run()
