@@ -120,6 +120,14 @@ class DataNodeService(FileTransferServiceServicer):
         except Exception as e:
             return UploadStatus(success=False, message=str(e))
 
+    def Download(self, request: FileDownloadRequest, context):
+        chunk_path = f"./chunks/{request.filename}"  # El nombre debe incluir el sufijo .chunk{id}
+        if not os.path.exists(chunk_path):
+            context.abort(grpc.StatusCode.NOT_FOUND, "Chunk not found")
+        with open(chunk_path, 'rb') as chunk_file:
+            chunk_data = chunk_file.read()
+        return FileDownloadResponse(data=chunk_data)
+
 
 # gRPC Server
 def serve():
