@@ -14,9 +14,9 @@ class FileTransferServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Upload = channel.stream_unary(
+        self.Upload = channel.unary_unary(
                 '/filetransfer.FileTransferService/Upload',
-                request_serializer=file__transfer__pb2.FileUploadRequest.SerializeToString,
+                request_serializer=file__transfer__pb2.FileChunk.SerializeToString,
                 response_deserializer=file__transfer__pb2.UploadStatus.FromString,
                 )
         self.Download = channel.unary_stream(
@@ -29,7 +29,7 @@ class FileTransferServiceStub(object):
 class FileTransferServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Upload(self, request_iterator, context):
+    def Upload(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -44,9 +44,9 @@ class FileTransferServiceServicer(object):
 
 def add_FileTransferServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Upload': grpc.stream_unary_rpc_method_handler(
+            'Upload': grpc.unary_unary_rpc_method_handler(
                     servicer.Upload,
-                    request_deserializer=file__transfer__pb2.FileUploadRequest.FromString,
+                    request_deserializer=file__transfer__pb2.FileChunk.FromString,
                     response_serializer=file__transfer__pb2.UploadStatus.SerializeToString,
             ),
             'Download': grpc.unary_stream_rpc_method_handler(
@@ -65,7 +65,7 @@ class FileTransferService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Upload(request_iterator,
+    def Upload(request,
             target,
             options=(),
             channel_credentials=None,
@@ -75,8 +75,8 @@ class FileTransferService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.stream_unary(request_iterator, target, '/filetransfer.FileTransferService/Upload',
-            file__transfer__pb2.FileUploadRequest.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/filetransfer.FileTransferService/Upload',
+            file__transfer__pb2.FileChunk.SerializeToString,
             file__transfer__pb2.UploadStatus.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

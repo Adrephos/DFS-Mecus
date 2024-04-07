@@ -2,10 +2,11 @@ import os
 import requests
 import socket
 import hashlib
+import random
 
 import grpc
-import file_transfer_pb2
-import file_transfer_pb2_grpc
+from file_transfer_pb2 import FileChunk
+from file_transfer_pb2_grpc import FileTransferServiceStub
 
 from bootstrap import URL, URL_SLAVE, CHUNK_SIZE
 
@@ -29,7 +30,6 @@ def get_ip():
 
 
 # Flask Functions
-
 def available():
     try:
         response = requests.post(f"{URL}/available")
@@ -154,6 +154,36 @@ def split_file(path: str, chunk_size: int):
     return hash.hexdigest(), chunks
 
 
+def send_chunks(hash_value, chunks, original_file_name):
+    for chunk_id, chunk_data in enumerate(chunks):
+        # Selección aleatoria de un data_node
+        data_node = random.choice(data_nodes)
+        data_node_ip = data_node['ip']
+
+        # Establece la conexión con el data_node
+        channel = grpc.insecure_channel(data_node_ip)
+        stub = FileTransferServiceStub(channel)
+
+        # Crea el mensaje FileChunk a enviar
+        chunk = FileChunk(
+            filename=original_file_name,  # Envía el nombre original del archivo.
+            chunk_id=chunk_id,
+            data=chunk_data,
+            hash=hash_value
+        )
+
+        # Envía el chunk al data_node seleccionado
+        response = stub.Upload(chunk)
+
+        if response.success:
+            print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
+        else:
+            print(f"Error al enviar chunk {chunk_id} a {data_node['name']}: {response.message}")
+
+        # Cierra el canal de comunicación
+        channel.close()
+
+
 def rebuild_file(name: str):
     try:
         os.mkdir('./reconstruct')
@@ -268,8 +298,8 @@ def run():
             if args[0] == 'available':
                 data_nodes = available()
 
-            elif args[0] == 'test' and len(args):
-                pass
+            elif args[0] == 'test' and len(args) == 2:
+                split_file(args[1], CHUNK_SIZE)
 
             elif args[0] == 'upload':
                 if len(args) != 2:
