@@ -10,7 +10,7 @@ import grpc
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server, FileTransferServiceStub
 from file_transfer_pb2 import UploadStatus, FileChunk, FileDownloadRequest, FileDownloadResponse
 
-from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, PORT, MY_IP
+from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, MY_IP
 
 # Flask initialization and configuration
 # Server
@@ -39,7 +39,7 @@ def keep_alive():
             response = requests.post(f'{URL}/keep_alive', json={'name': NAME})
         except requests.exceptions.RequestException:
             try:
-                register_namenode(URL_SLAVE, NAME, f'{MY_IP}:{PORT}')
+                register_namenode(URL_SLAVE, NAME, MY_IP)
                 response = requests.post(
                     f'{URL_SLAVE}/keep_alive', json={'name': NAME})
             except requests.exceptions.RequestException as e:
