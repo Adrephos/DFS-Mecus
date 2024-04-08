@@ -127,7 +127,7 @@ class DataNodeService(FileTransferServiceServicer):
             context.abort(grpc.StatusCode.NOT_FOUND, "Chunk not found")
         with open(chunk_path, 'rb') as chunk_file:
             chunk_data = chunk_file.read()
-        print(f"Sent chunk {request.chunk_id} from {request.filename}")
+        print(f"Sent chunk from {request.filename}")
         return FileDownloadResponse(data=chunk_data)
 
 
