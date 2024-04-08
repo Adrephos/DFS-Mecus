@@ -10,7 +10,7 @@ import grpc
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server, FileTransferServiceStub
 from file_transfer_pb2 import UploadStatus, FileChunk, FileDownloadRequest, FileDownloadResponse
 
-from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, MY_IP, PORT, MY_URL
+from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, MY_IP, PORT
 
 # Flask initialization and configuration
 # Server
@@ -39,7 +39,7 @@ def keep_alive():
             response = requests.post(f'{URL}/keep_alive', json={'name': NAME})
         except requests.exceptions.RequestException:
             try:
-                register_namenode(URL_SLAVE, NAME, MY_URL)
+                register_namenode(URL_SLAVE, NAME, f'{MY_IP}:{PORT}')
                 response = requests.post(
                     f'{URL_SLAVE}/keep_alive', json={'name': NAME})
             except requests.exceptions.RequestException as e:
@@ -73,7 +73,7 @@ def get_data_nodes():
 def remove_self(data_nodes):
     new_data_nodes = []
     for data_node in data_nodes:
-        if data_node['ip'] != MY_URL:
+        if data_node['ip'] != f'{MY_IP}:{PORT}':
             new_data_nodes.append(data_node)
     return new_data_nodes
 
@@ -142,7 +142,7 @@ def serve():
 
 
 if __name__ == '__main__':
-    register_namenode(URL, NAME, MY_URL)
+    register_namenode(URL, NAME, f'{MY_IP}:{PORT}')
 
     grpc_thread = threading.Thread(target=serve)
     grpc_thread.start()
