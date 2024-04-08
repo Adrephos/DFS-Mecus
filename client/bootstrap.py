@@ -1,3 +1,3 @@
 URL = f'http://3.208.82.202:5000/'
-URL_SLAVE = f'http://127.0.0.1:5003/'
+URL_SLAVE = f'http://100.24.82.225:5000/'
 CHUNK_SIZE = 1400*1024
