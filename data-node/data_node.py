@@ -10,7 +10,7 @@ import grpc
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server, FileTransferServiceStub
 from file_transfer_pb2 import UploadStatus, FileChunk, FileDownloadRequest, FileDownloadResponse
 
-from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, MY_IP
+from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, MY_IP, PORT
 
 # Flask initialization and configuration
 # Server
@@ -39,7 +39,7 @@ def keep_alive():
             response = requests.post(f'{URL}/keep_alive', json={'name': NAME})
         except requests.exceptions.RequestException:
             try:
-                register_namenode(URL_SLAVE, NAME, MY_IP)
+                register_namenode(URL_SLAVE, NAME, f'{MY_IP}:{PORT}')
                 response = requests.post(
                     f'{URL_SLAVE}/keep_alive', json={'name': NAME})
             except requests.exceptions.RequestException as e:
@@ -113,7 +113,7 @@ class DataNodeService(FileTransferServiceServicer):
                 data_node = random.choice(data_nodes)
             except Exception as e:
                 print(f"Error replicating chunk: {e}")
-            if request.replicate:
+            if request.replicate and len(data_nodes) > 0:
                 replicate_chunk(data_node['ip'], request)
             return UploadStatus(success=True, replica_url=data_node['ip'], message="Chunk received successfully")
         except Exception as e:
