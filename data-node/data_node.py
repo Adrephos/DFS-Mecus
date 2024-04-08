@@ -108,14 +108,16 @@ class DataNodeService(FileTransferServiceServicer):
                 print(
                     f"Chunk {request.chunk_id} from {request.filename} received")
             # replicate chunk in other data node
+            replica_url = ""
             try:
                 data_nodes = remove_self(get_data_nodes())
                 data_node = random.choice(data_nodes)
                 if request.replicate and len(data_nodes) > 0:
                     replicate_chunk(data_node['ip'], request)
+                replica_url = data_node['ip']
             except Exception as e:
                 print(f"Error replicating chunk: {e}")
-            return UploadStatus(success=True, replica_url=data_node['ip'], message="Chunk received successfully")
+            return UploadStatus(success=True, replica_url=, message="Chunk received successfully")
         except Exception as e:
             return UploadStatus(success=False, message=str(e))
 
