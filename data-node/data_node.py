@@ -8,16 +8,16 @@ from concurrent import futures
 
 import grpc
 from file_transfer_pb2_grpc import FileTransferServiceServicer, add_FileTransferServiceServicer_to_server, FileTransferServiceStub
-from file_transfer_pb2 import UploadStatus, FileChunk
+from file_transfer_pb2 import UploadStatus, FileChunk, FileDownloadRequest, FileDownloadResponse
 
 from bootstrap import URL, URL_SLAVE, NAME, KEEPALIVE_SLEEP_SECONDS, PORT, MY_IP
 
-# Inicialización y configuración de Flask
+# Flask initialization and configuration
 # Server
 app = Flask(__name__)
 
 
-# Funciones de Flask
+# Flask functions
 def register_namenode(url, name, data_node_url):
     message = {'name': name, 'ip': data_node_url}
     try:
@@ -68,9 +68,8 @@ def get_data_nodes():
         print(f"get_data_nodes failed: {response.json().get('response')}")
         return []
 
+
 # remove this node from datanodes array
-
-
 def remove_self(data_nodes):
     new_data_nodes = []
     for data_node in data_nodes:
@@ -93,7 +92,7 @@ def replicate_chunk(data_node, request):
                     hash=request.hash
                 ))
             print(
-                f"Chunk {request.chunk_id} de {request.filename} replicado en {request.data_node}")
+                f"Chunk {request.chunk_id} from {request.filename} replicated in {request.data_node}")
             return response
     except Exception as e:
         print(f"Error replicating chunk: {e}")
@@ -107,7 +106,7 @@ class DataNodeService(FileTransferServiceServicer):
             with open(f"./chunks/{request.filename}.chunk{request.chunk_id}", "wb") as file:
                 file.write(request.data)
                 print(
-                    f"Chunk {request.chunk_id} de {request.filename} recibido.")
+                    f"Chunk {request.chunk_id} from {request.filename} received")
             # replicate chunk in other data node
             try:
                 data_nodes = remove_self(get_data_nodes())
@@ -116,16 +115,17 @@ class DataNodeService(FileTransferServiceServicer):
                 print(f"Error replicating chunk: {e}")
             if request.replicate:
                 replicate_chunk(data_node['ip'], request)
-            return UploadStatus(success=True, replica_url=data_node['ip'], message="Chunk recibido.")
+            return UploadStatus(success=True, replica_url=data_node['ip'], message="Chunk received successfully")
         except Exception as e:
             return UploadStatus(success=False, message=str(e))
 
     def Download(self, request: FileDownloadRequest, context):
-        chunk_path = f"./chunks/{request.filename}"  # El nombre debe incluir el sufijo .chunk{id}
+        chunk_path = f"./chunks/{request.filename}"
         if not os.path.exists(chunk_path):
             context.abort(grpc.StatusCode.NOT_FOUND, "Chunk not found")
         with open(chunk_path, 'rb') as chunk_file:
             chunk_data = chunk_file.read()
+        print(f"Sent chunk {request.chunk_id} from {request.filename}")
         return FileDownloadResponse(data=chunk_data)
 
 
@@ -140,10 +140,8 @@ def serve():
 
 
 if __name__ == '__main__':
-    # Registro en el NameNode
     register_namenode(URL, NAME, f'{MY_IP}:{PORT}')
 
-    # Inicia el hilo de gRPC Server
     grpc_thread = threading.Thread(target=serve)
     grpc_thread.start()
 

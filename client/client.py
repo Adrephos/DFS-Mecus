@@ -8,7 +8,8 @@ import grpc
 from file_transfer_pb2 import FileChunk, FileDownloadRequest
 from file_transfer_pb2_grpc import FileTransferServiceStub
 
-from bootstrap import URL, URL_SLAVE, CHUNK_SIZE, DATA_PORT
+from bootstrap import URL, URL_SLAVE, CHUNK_SIZE
+
 
 # Util Functions
 def parse(message: str):
@@ -149,8 +150,40 @@ def split_file(path: str, chunk_size: int):
     return hash.hexdigest(), chunks
 
 
+def download_chunk(data_node_address, chunk_name):
+    try:
+        channel = grpc.insecure_channel(data_node_address)
+        stub = FileTransferServiceStub(channel)
+    except Exception:
+        print(
+            f"Error: DataNode {data_node_address} is not available.")
+        return
+
+    try:
+        print(f'Downloading chunk from {data_node_address}')
+        chunk_data = stub.Download(
+            FileDownloadRequest(filename=chunk_name)).data
+        return chunk_data
+    except Exception:
+        print(
+            f"Error: Chunk download failed from {data_node_address}.")
+        return None
+    finally:
+        channel.close()
+
+
 def download_file(user, dfs_path: str, local_path: str):
-    response = command(user, dfs_path, 'file_info')  # Asumo que esta función obtiene la info del archivo desde nameNode
+    if os.path.isdir(local_path):
+        print(
+            f"Error: '{local_path}' is a directory, a filename is expected")
+        return
+    directory = os.path.dirname(local_path)
+    if directory and not os.path.exists(directory):
+        print(f"Creating '{directory}' directory for the downloaded file")
+        os.makedirs(directory, exist_ok=True)
+
+    # Get chunks URLs
+    response = command(user, dfs_path, 'file_info')
     message = response.get('message')
     if message != "":
         print(message)
@@ -159,56 +192,63 @@ def download_file(user, dfs_path: str, local_path: str):
     file_info = response.get('file_info')
     hash_original = file_info.get('hash')
     chunks = file_info.get('chunks')
-    chunksReplicas = file_info.get('chunksReplicas')  # No se usa en este ejemplo, pero puede ser útil para tolerancia a fallos
+    chunksReplicas = file_info.get('chunksReplicas')
 
-    # Iniciar la descarga de los chunks
-    with open(local_path, 'wb') as f:
-        for chunk_id, data_node_address in chunks.items():
-            channel = grpc.insecure_channel(data_node_address)
-            stub = FileTransferServiceStub(channel)
-            chunk_name = f"{user}_$%s.chunk{chunk_id}" % dfs_path.split('/')[-1]  # Asume formato de nombre de chunk
-            try:
-                chunk_data = stub.Download(FileDownloadRequest(filename=chunk_name)).data
-                f.write(chunk_data)
-            finally:
-                channel.close()
-
-    # Verificar el hash del archivo ensamblado
-    with open(local_path, 'rb') as f:
-        data = f.read()
-        hash_final = hashlib.sha256(data).hexdigest()
-        if hash_final != hash_original:
-            print("Error: File hash mismatch. Download failed or file is corrupted.")
-        else:
-            print("File downloaded and verified successfully")
-
-
-def rebuild_file(name: str):
+    # Start chunks download
     try:
-        os.mkdir('./reconstruct')
-    except Exception:
-        print('./reconstruct/ already exists')
+        f = open(local_path, 'wb')
+    except Exception as e:
+        print(f"Error: {e}")
+        return
 
-    file_m = open('./reconstruct/' + name, 'wb')
-    chunk = 0
+    for chunk_id in range(0, len(chunks)):
+        data_node_address = chunks[str(chunk_id)]
+        chunk_name = f"{user}_$%s.chunk{chunk_id}" % dfs_path.split('/')[-1]
+        chunk_data = download_chunk(data_node_address, chunk_name)
+        if not chunk_data:
+            data_node_address = chunksReplicas[str(chunk_id)]
+            chunk_data = download_chunk(data_node_address, chunk_name)
+            if not chunk_data:
+                print(
+                    f"Error: DataNode {data_node_address} is not available.")
+                return
+        f.write(chunk_data)
+    f.close()
 
-    file_name = './chunks/' + name + '.chunk' + str(chunk)
     try:
-        file_temp = open(file_name, 'rb')
-        while file_temp:
-            print(f'- chunk #{chunk} done')
-            byte = file_temp.read()
-            file_m.write(byte)
+        f = open(local_path, 'rb')
+    except Exception as e:
+        print(f"Error: {e}")
+        return
 
-            chunk += 1
+    # Verify file hash
+    data = f.read()
+    hash_final = hashlib.sha256(data).hexdigest()
+    if hash_final != hash_original:
+        print("Error: File hash mismatch. Download failed or file is corrupted.")
+    else:
+        print("File downloaded and verified successfully")
+    f.close()
 
-            file_name = './chunks/' + name + '.chunk' + str(chunk)
-            try:
-                file_temp = open(file_name, 'rb')
-            except Exception:
-                break
-    except Exception:
-        print('Error: not a valid file to reconstruct')
+
+def upload_chunk(user, full_path, nodes, chunk_id, chunk_data, hash):
+    data_node = random.choice(nodes)
+    data_node_ip = data_node['ip']
+
+    with grpc.insecure_channel(f'{data_node_ip}') as channel:
+        stub = FileTransferServiceStub(channel)
+
+        last_full_path = full_path.replace('/', '$')
+
+        chunk = FileChunk(
+            filename=f'{user}_{last_full_path}',
+            chunk_id=chunk_id,
+            data=chunk_data,
+            replicate=True,
+            hash=hash
+        )
+
+        return stub.Upload(chunk), data_node
 
 
 def upload_file(user, dfs_path: str, local_path: str, nodes):
@@ -222,51 +262,32 @@ def upload_file(user, dfs_path: str, local_path: str, nodes):
     if message != "":
         print(message)
         return
-    # se usa para guardar el archivo en el data node
-    # username-/path/to/file
     full_path = response.get('full_path')
 
     print("File will be uploaded to:", full_path)
-    # hash, array con los chunks
+
     hash, chunks = split_file(local_path, CHUNK_SIZE)
     if not hash:
         print('Error when splitting file')
         return
 
-    # Envío de los chunks
+    # Send chunks to data-nodes
     ip_chunks = {}
     ip_chunks_replicas = {}
     for chunk_id, chunk_data in enumerate(chunks):
-        
-        data_node = random.choice(nodes)
-        data_node_ip = data_node['ip']
 
-        # Establece la conexión con el data_node
-        channel = grpc.insecure_channel(f'{data_node_ip}')
-        stub = FileTransferServiceStub(channel)
-
-        last_full_path = full_path.replace('/', '$')
-
-        chunk = FileChunk(
-            filename=f'{user}_{last_full_path}',
-            chunk_id=chunk_id,
-            data=chunk_data,
-            replicate=True,
-            hash=hash
-        )
-
-        # Envía el chunk al data_node seleccionado
-        response = stub.Upload(chunk)
+        response, data_node = upload_chunk(user, full_path, nodes,
+                                           chunk_id, chunk_data, hash)
 
         if response.success:
-            ip_chunks[chunk_id] = data_node_ip
+            ip_chunks[chunk_id] = data_node['ip']
             ip_chunks_replicas[chunk_id] = response.replica_url
-            print(f"Chunk {chunk_id} enviado correctamente a {data_node['name']}.")
+            print(
+                f"Chunk {chunk_id} sent to {data_node['name']} successfully")
         else:
-            print(f"Error sending chunk {chunk_id} to {data_node['name']}: {response.message}")
+            print(
+                f"Error sending chunk {chunk_id} to {data_node['name']}: {response.message}")
             return
-
-        channel.close()
 
     add_file(user, full_path, hash, ip_chunks, ip_chunks_replicas)
 
@@ -296,21 +317,18 @@ def run():
 
         if login_flag:
             if args[0] == 'upload':
-                if len(args) != 2:
-                    print("Usage: upload <file_path_in_dfs>")
-                elif len(args) == 2:
+                if len(args) != 3:
+                    print("Usage: upload <file_path_in_dfs> <local_file_path>")
+                elif len(args) == 3:
                     data_nodes = available_data_nodes()
                     if len(data_nodes) >= 1:
-                        print(
-                            '\u001b[33mEnter the file path to upload to DFS-Mecus\u001b[36m')
-                        path = input('File path (from root): \u001b[37m')
-                        upload_file(user, args[1], path, data_nodes)
+                        upload_file(user, args[1], args[2], data_nodes)
                     else:
                         print("No DataNodes available, cannot upload files :(")
 
             elif args[0] == 'download':
                 if len(args) != 3:
-                    print("Usage: download <file_path_in_dfs> <file_local_path>")
+                    print("Usage: download <file_path_in_dfs> <local_file_path>")
                 else:
                     download_file(user, args[1], args[2])
 
@@ -349,7 +367,7 @@ def run():
                     full_path = response.get('curr_dir')
                     print(full_path)
 
-            #This is only used for testing when a file is going to be sent
+            # This is only used for testing when a file is going to be sent
             elif args[0] == 'file_info':
                 if len(args) != 2:
                     print("Usage: file_info <file_path>")
@@ -385,15 +403,20 @@ def run():
 
             elif args[0] == 'help' and len(args) == 1:
                 print('available commands:')
-                print("  cd <path>          - Change directory")
-                print('  clear              - Clear the screen')
-                print('  upload <path_in_dfs>       - Upload a file')
-                print('  download <path>    - Download a file')
-                print('  help               - Show this help') 
-                print('  pwd                - Show current directory')
-                print('  logout             - Stop program')
-                print("  ls                 - List directory contents")
-                print("  mkdir <path>       - Create a directory")
+                print("  cd <path>                                   - Change directory")
+                print('  clear                                       - Clear the screen')
+                print('  upload <path_in_dfs> <local_file_path>      - Upload a file')
+                print('  download <path_in_dfs> <local_file_path>    - Download a file')
+                print('  help                                        - Show this help')
+                print(
+                    '  pwd                                         - Show current directory')
+                print(
+                    '  rm                                          - Remove file or directory reference')
+                print('  logout                                      - Stop program')
+                print(
+                    "  ls                                          - List directory contents")
+                print(
+                    "  mkdir <path>                                - Create a directory")
 
             elif args[0] == 'clear':
                 os.system('clear')

@@ -1,5 +1,5 @@
 MY_IP = '127.0.0.1'
-PORT = 5010
+PORT = 5031
 NAME = 'DataNode1'
 URL = 'http://127.0.0.1:5000/'
 URL_SLAVE = 'http://127.0.0.1:5000/'
