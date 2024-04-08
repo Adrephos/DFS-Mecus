@@ -117,7 +117,7 @@ class DataNodeService(FileTransferServiceServicer):
                 replica_url = data_node['ip']
             except Exception as e:
                 print(f"Error replicating chunk: {e}")
-            return UploadStatus(success=True, replica_url=, message="Chunk received successfully")
+            return UploadStatus(success=True, replica_url=replica_url, message="Chunk received successfully")
         except Exception as e:
             return UploadStatus(success=False, message=str(e))
 
