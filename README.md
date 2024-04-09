@@ -1,5 +1,4 @@
-# Project DFS - Telematics course
-
+# PROJECT 1: Distributed File System
 ```
   ____  _____ ____        __  __
  |  _ \|  ___/ ___|      |  \/  | ___  ___ _   _ ___ 
@@ -8,51 +7,89 @@
  |____/|_|   |____/      |_|  |_|\___|\___|\__,_|___/
 
 ```
+Distributed file system (DFS) centerd on chunk-based storage.
+The architecture involves chunk-level distribution, data replication,
+and fault tolerance. This system adopts a WORM (write-once, read-many)
+paradigm, which means that once a file is uploaded, it cannot be modified.
 
-## <-Base architecture-> 
+## Base architecture 
 
-![image](https://github.com/Adrephos/DFS-Mecus/assets/83888452/212fecee-3cf5-46af-9c3b-03f4e25f8af0)
+![image](./images/architecture.png)
 
-## Uploading file process
+**The architecture is composed of three main components: the client, the data node, and the name node.**
 
-![image](https://github.com/Adrephos/DFS-Mecus/assets/83888452/ebe1a06a-54fa-457b-a504-ff449fbb837e)
+> The client is responsible for sending requests to the name node,
+> which is responsible for managing the metadata of the files and the data nodes.
+> The data nodes are responsible for storing the chunks of the files.
 
-## Running the project in local:
+## Running the project in a local environment:
 
-### 1. Downloading dependencies. 
+### 1. Cloning the repository
+First, clone the repository to your local machine using the following command:
+```bash
+$ git clone https://github.com/Adrephos/DFS-Mecus
+$ cd DFS-Mecus
+```
 
-Go to each folder (client, data-node and name-node) and run the following command:
+### 2. Running the name node
+To run the name node, execute the following commands:
+```bash
+# Change to the name node directory
+$ cd name-node
+# Create a virtual environment
+$ python -m venv venv
+# Activate the virtual environment
+$ source venv/bin/activate
+# Install the dependencies
+$ pip install -r requirements.txt
+# Run the name node
+$ python name_node.py
+```
+The name node can be configured by modifying the `bootstrap.py` file.
 
-```pip install -r requirements.txt```
+![Name Node](./images/name_node.png)
 
-It is recommended to install the project requirements in a virtual machine, but it is not mandatory. 
+> [!TIP]
+> If you want to run a secondary name node, you can do so by running it with the commented configuration in the `bootstrap.py` file.
 
-### 2. Running the project
+### 3. Running the data node
+To run the data node, execute the following commands:
+```bash
+# Change to the data node directory
+$ cd data-node
+# Create a virtual environment
+$ python -m venv venv
+# Activate the virtual environment
+$ source venv/bin/activate
+# Install the dependencies
+$ pip install -r requirements.txt
+# Run the data node
+$ python data_node.py
+```
+The data node can be configured by modifying the `bootstrap.py` file.
 
-Go to the name node folder, run the command
+![Data Node](./images/data_node.png)
 
-```python name-node.py```
+### 4. Running the client
+To run the client, execute the following commands:
+```bash
+# Change to the client directory
+$ cd client
+# Create a virtual environment
+$ python -m venv venv
+# Activate the virtual environment
+$ source venv/bin/activate
+# Install the dependencies
+$ pip install -r requirements.txt
+# Run the client
+$ python client.py
+```
+The client can be configured by modifying the `bootstrap.py` file.
 
-![image](https://github.com/Adrephos/DFS-Mecus/assets/83888452/107a1e12-5b5a-48be-b531-403de75ab01b)
+![Client](./images/client.png)
 
-Then, go to bootstrap.py, comment the leader config and uncomment the slave config
-
-![image](https://github.com/Adrephos/DFS-Mecus/assets/83888452/e60cbab9-eaae-4b7d-bf12-aa7ae16263da)
-
-then, run the command:
-
-```python name-node.py```
-
-![image](https://github.com/Adrephos/DFS-Mecus/assets/83888452/34025a86-a8bd-4322-bb28-719faebe1e95)
-
-That is how the name-node and the name-node backup start running! After that, run the ```data-node.py``` and the ```client.py``` codes. 
-
-![image](https://github.com/Adrephos/DFS-Mecus/assets/83888452/8698889d-4d67-4976-833c-e96e6630c9e8)
-
-That is it! Register an account, login and if not sure about a command, just run the command ```help``` 💗
-
-
-
-
-
-
+## References
+- [The Google File System](https://g.co/kgs/XzwmU76)
+- [Hadoop File System](https://es.wikipedia.org/wiki/Hadoop_Distributed_File_System)
+- [gRPC](https://grpc.io/docs)
+- [Distributed file system](https://en.wikipedia.org/wiki/Distributed_data_store)
