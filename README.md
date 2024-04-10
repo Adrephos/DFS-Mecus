@@ -88,6 +88,12 @@ The client can be configured by modifying the `bootstrap.py` file.
 
 ![Client](./images/client.png)
 
+## Video
+
+Video explanation of the project:
+
+[![Explanations video](https://img.youtube.com/vi/WKrXh_C2Iak/maxresdefault.jpg)](https://youtu.be/WKrXh_C2Iak)
+
 ## References
 - [The Google File System](https://g.co/kgs/XzwmU76)
 - [Hadoop File System](https://es.wikipedia.org/wiki/Hadoop_Distributed_File_System)

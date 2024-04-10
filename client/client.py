@@ -316,6 +316,8 @@ def run():
             continue
 
         if login_flag:
+            if args[0] == 'available':
+                data_nodes = available_data_nodes()
             if args[0] == 'upload':
                 if len(args) != 3:
                     print("Usage: upload <file_path_in_dfs> <local_file_path>")
@@ -376,7 +378,11 @@ def run():
                     message = response.get('message')
                     curr_dir = response.get('curr_dir')
                     file_info = response.get('file_info')
-                    print(file_info)
+                    if file_info is not None:
+                        print('   hash ->', file_info['hash'])
+                        print('   chunks ->', file_info['chunks'])
+                        print('   chunksReplicas ->', file_info['chunksReplicas'])
+
                     print(message, end="")
 
             elif args[0] == 'ls':
